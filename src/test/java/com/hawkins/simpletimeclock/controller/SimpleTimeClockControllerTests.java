@@ -28,13 +28,12 @@ public class SimpleTimeClockControllerTests
 {
 	private static final String USER_ID = "987654321";
 	
+	@MockBean
+	private UserService userService;
 	@Autowired
 	private MockMvc mockMvc;
 	@Autowired
 	private SimpleTimeClockController controller;
-	
-	@MockBean
-	private UserService userService;
 	
 	private User user;
 	

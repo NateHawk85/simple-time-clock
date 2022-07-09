@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class UserRepositoryTests
 {
 	private static final String USER_ID = "987654321";
+	
 	private UserRepository userRepository;
 	
 	@BeforeEach
