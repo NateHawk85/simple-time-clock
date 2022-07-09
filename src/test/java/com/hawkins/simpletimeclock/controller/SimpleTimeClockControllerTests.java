@@ -41,7 +41,7 @@ public class SimpleTimeClockControllerTests
 	@BeforeEach
 	public void setUp() throws UserNotFoundException
 	{
-		user = new User();
+		user = new User(USER_ID);
 		when(userService.findUser(anyString())).thenReturn(user);
 	}
 	
