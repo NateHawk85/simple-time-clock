@@ -1,5 +1,7 @@
 package com.hawkins.simpletimeclock.domain;
 
+import org.springframework.lang.NonNull;
+
 import java.time.LocalDateTime;
 
 public class WorkShift
@@ -7,7 +9,7 @@ public class WorkShift
 	private final LocalDateTime startTime;
 	private LocalDateTime endTime;
 	
-	public WorkShift(LocalDateTime startTime)
+	public WorkShift(@NonNull LocalDateTime startTime)
 	{
 		this.startTime = startTime;
 	}

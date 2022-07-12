@@ -3,6 +3,7 @@ package com.hawkins.simpletimeclock.repository;
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.exception.UserAlreadyExistsException;
 import com.hawkins.simpletimeclock.exception.UserNotFoundException;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 import java.util.HashMap;
@@ -13,12 +14,13 @@ public class UserRepository
 {
 	private final Map<String, User> users = new HashMap<>();
 	
-	public User create(User user) throws UserAlreadyExistsException
+	public User create(@NonNull User user) throws UserAlreadyExistsException
 	{
 		if (users.get(user.getUserId()) != null)
 		{
 			throw new UserAlreadyExistsException();
 		}
+		
 		users.put(user.getUserId(), user);
 		
 		return user;
@@ -35,16 +37,15 @@ public class UserRepository
 		return user;
 	}
 	
-	public User update(User user) throws UserNotFoundException
+	public User update(@NonNull User user) throws UserNotFoundException
 	{
 		if (users.get(user.getUserId()) == null)
 		{
 			throw new UserNotFoundException();
 		}
+		
 		users.put(user.getUserId(), user);
 		
 		return user;
 	}
-	
-	
 }

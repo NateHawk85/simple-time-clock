@@ -119,7 +119,7 @@ public class UserRepositoryTests
 	
 	//endregion
 	
-	//region find
+	//region update
 	
 	@Test
 	public void update_When_UserDoesNotExistWithId_Then_ThrowsUserNotFoundException()

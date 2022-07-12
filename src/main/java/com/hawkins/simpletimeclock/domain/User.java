@@ -1,22 +1,20 @@
 package com.hawkins.simpletimeclock.domain;
 
-import java.time.LocalDateTime;
+import org.springframework.lang.NonNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class User
 {
 	private final String userId;
 	private String name;
 	private WorkShift currentWorkShift;
+	private List<WorkShift> priorWorkShifts = new ArrayList<>();
 	
-	public User(String userId)
+	public User(@NonNull String userId)
 	{
 		this.userId = userId;
-	}
-	
-	// TODO - implement/test
-	public void startShift(LocalDateTime startTime)
-	{
-	
 	}
 	
 	public String getUserId()
@@ -32,5 +30,20 @@ public class User
 	public void setName(String name)
 	{
 		this.name = name;
+	}
+	
+	public WorkShift getCurrentWorkShift()
+	{
+		return currentWorkShift;
+	}
+	
+	public void setCurrentWorkShift(WorkShift currentWorkShift)
+	{
+		this.currentWorkShift = currentWorkShift;
+	}
+	
+	public List<WorkShift> getPriorWorkShifts()
+	{
+		return priorWorkShifts;
 	}
 }
