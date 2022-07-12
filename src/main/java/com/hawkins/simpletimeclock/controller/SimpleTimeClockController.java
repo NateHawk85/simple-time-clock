@@ -3,8 +3,11 @@ package com.hawkins.simpletimeclock.controller;
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.exception.UserAlreadyExistsException;
 import com.hawkins.simpletimeclock.exception.UserNotFoundException;
+import com.hawkins.simpletimeclock.exception.WorkShiftAlreadyStartedException;
+import com.hawkins.simpletimeclock.exception.WorkShiftNotStartedException;
 import com.hawkins.simpletimeclock.service.ContextURIService;
 import com.hawkins.simpletimeclock.service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,5 +42,21 @@ public class SimpleTimeClockController
 	public ResponseEntity<User> findUser(@PathVariable String userId) throws UserNotFoundException
 	{
 		return ResponseEntity.ok(userService.findUser(userId));
+	}
+	
+	@PostMapping("/user/{userId}/startShift")
+	public ResponseEntity<HttpStatus> startShift(@PathVariable String userId) throws UserNotFoundException, WorkShiftAlreadyStartedException
+	{
+		userService.startShift(userId);
+		
+		return new ResponseEntity<>(HttpStatus.OK);
+	}
+	
+	@PostMapping("/user/{userId}/endShift")
+	public ResponseEntity<HttpStatus> endShift(@PathVariable String userId) throws UserNotFoundException, WorkShiftNotStartedException
+	{
+		userService.endShift(userId);
+		
+		return new ResponseEntity<>(HttpStatus.OK);
 	}
 }

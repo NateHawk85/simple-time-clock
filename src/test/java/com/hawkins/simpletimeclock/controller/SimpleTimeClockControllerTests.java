@@ -3,6 +3,8 @@ package com.hawkins.simpletimeclock.controller;
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.exception.UserAlreadyExistsException;
 import com.hawkins.simpletimeclock.exception.UserNotFoundException;
+import com.hawkins.simpletimeclock.exception.WorkShiftAlreadyStartedException;
+import com.hawkins.simpletimeclock.exception.WorkShiftNotStartedException;
 import com.hawkins.simpletimeclock.service.ContextURIService;
 import com.hawkins.simpletimeclock.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,13 +19,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.bind.annotation.RestController;
 
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -149,6 +151,80 @@ public class SimpleTimeClockControllerTests
 		when(userService.findUser(anyString())).thenThrow(new UserNotFoundException());
 		
 		assertThrows(UserNotFoundException.class, () -> controller.findUser(USER_ID));
+	}
+	
+	//endregion
+	
+	//region startShift
+	
+	@Test
+	public void startShift_EndpointExists() throws Exception
+	{
+		mockMvc.perform(MockMvcRequestBuilders.post("/user/987654321/startShift"))
+				.andExpect(status().isOk());
+	}
+	
+	@ParameterizedTest
+	@ValueSource(strings = {USER_ID, "123456789"})
+	public void startShift_CallsUserService(String userId) throws UserNotFoundException, WorkShiftAlreadyStartedException
+	{
+		controller.startShift(userId);
+		
+		verify(userService).startShift(userId);
+	}
+	
+	@Test
+	public void startShift_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException, WorkShiftAlreadyStartedException
+	{
+		doThrow(new UserNotFoundException()).when(userService).startShift(anyString());
+		
+		assertThrows(UserNotFoundException.class, () -> controller.startShift(USER_ID));
+	}
+	
+	@Test
+	public void startShift_When_UserServiceThrowsWorkShiftAlreadyStartedException_Then_ThrowsSameException() throws UserNotFoundException,
+																													WorkShiftAlreadyStartedException
+	{
+		doThrow(new WorkShiftAlreadyStartedException()).when(userService).startShift(anyString());
+		
+		assertThrows(WorkShiftAlreadyStartedException.class, () -> controller.startShift(USER_ID));
+	}
+	
+	//endregion
+	
+	//region endShift
+	
+	@Test
+	public void endShift_EndpointExists() throws Exception
+	{
+		mockMvc.perform(MockMvcRequestBuilders.post("/user/987654321/endShift"))
+				.andExpect(status().isOk());
+	}
+	
+	@ParameterizedTest
+	@ValueSource(strings = {USER_ID, "123456789"})
+	public void endShift_CallsUserService(String userId) throws UserNotFoundException, WorkShiftNotStartedException
+	{
+		controller.endShift(userId);
+		
+		verify(userService).endShift(userId);
+	}
+	
+	@Test
+	public void endShift_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException, WorkShiftNotStartedException
+	{
+		doThrow(new UserNotFoundException()).when(userService).endShift(anyString());
+		
+		assertThrows(UserNotFoundException.class, () -> controller.endShift(USER_ID));
+	}
+	
+	@Test
+	public void endShift_When_UserServiceThrowsWorkShiftNotStartedException_Then_ThrowsSameException() throws UserNotFoundException,
+																											  WorkShiftNotStartedException
+	{
+		doThrow(new WorkShiftNotStartedException()).when(userService).endShift(anyString());
+		
+		assertThrows(WorkShiftNotStartedException.class, () -> controller.endShift(USER_ID));
 	}
 	
 	//endregion

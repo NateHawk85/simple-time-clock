@@ -120,19 +120,36 @@ public class UserServiceTests
 	
 	//region startShift
 	
+	@ParameterizedTest
+	@ValueSource(strings = {USER_ID, "123456789"})
+	public void startShift_CallsUserRepositoryForUser(String userId) throws UserNotFoundException, WorkShiftAlreadyStartedException
+	{
+		userService.startShift(userId);
+		
+		verify(userRepository).find(userId);
+	}
+	
+	@Test
+	public void startShift_When_UserRepositoryFindThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
+	{
+		when(userRepository.find(anyString())).thenThrow(new UserNotFoundException());
+		
+		assertThrows(UserNotFoundException.class, () -> userService.startShift(USER_ID));
+	}
+	
 	@Test
 	public void startShift_When_CurrentWorkShiftExists_Then_ThrowsShiftAlreadyStartedException()
 	{
 		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		
-		assertThrows(WorkShiftAlreadyStartedException.class, () -> userService.startShift(user));
+		assertThrows(WorkShiftAlreadyStartedException.class, () -> userService.startShift(USER_ID));
 	}
 	
 	@Test
 	public void startShift_When_NoCurrentWorkShiftExists_Then_CreatesNewWorkShiftWithCurrentTime() throws WorkShiftAlreadyStartedException,
 																										  UserNotFoundException
 	{
-		userService.startShift(user);
+		userService.startShift(USER_ID);
 		
 		assertEquals(START_TIME, user.getCurrentWorkShift().getStartTime());
 	}
@@ -140,38 +157,46 @@ public class UserServiceTests
 	@Test
 	public void startShift_When_NoCurrentWorkShiftExists_Then_CallsUserRepository() throws WorkShiftAlreadyStartedException, UserNotFoundException
 	{
-		userService.startShift(user);
+		userService.startShift(USER_ID);
 		
 		verify(userRepository).update(user);
 	}
 	
 	@Test
-	public void startShift_When_NoCurrentWorkShiftExists_Then_ReturnsUser() throws WorkShiftAlreadyStartedException, UserNotFoundException
-	{
-		User otherUser = new User(USER_ID);
-		when(userRepository.update(any())).thenReturn(otherUser);
-		
-		User actual = userService.startShift(user);
-		
-		assertEquals(otherUser, actual);
-	}
-	
-	@Test
-	public void startShift_When_UserRepositoryThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
+	public void startShift_When_UserRepositorySaveThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
 	{
 		when(userRepository.update(any())).thenThrow(new UserNotFoundException());
 		
-		assertThrows(UserNotFoundException.class, () -> userService.startShift(user));
+		assertThrows(UserNotFoundException.class, () -> userService.startShift(USER_ID));
 	}
 	
 	//endregion
 	
 	//region endShift
 	
-	@Test
-	public void endShift_When_NoCurrentWorkShiftExists_Then_ThrowsShiftNotStartedException()
+	@ParameterizedTest
+	@ValueSource(strings = {USER_ID, "123456789"})
+	public void endShift_CallsUserRepositoryForUser(String userId) throws UserNotFoundException, WorkShiftNotStartedException
 	{
-		assertThrows(WorkShiftNotStartedException.class, () -> userService.endShift(user));
+		WorkShift currentWorkShift = new WorkShift(START_TIME);
+		user.setCurrentWorkShift(currentWorkShift);
+		userService.endShift(userId);
+		
+		verify(userRepository).find(userId);
+	}
+	
+	@Test
+	public void endShift_When_UserRepositoryFindThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
+	{
+		when(userRepository.find(anyString())).thenThrow(new UserNotFoundException());
+		
+		assertThrows(UserNotFoundException.class, () -> userService.endShift(USER_ID));
+	}
+	
+	@Test
+	public void endShift_When_NoCurrentWorkShiftExists_Then_ThrowsWorkShiftNotStartedException()
+	{
+		assertThrows(WorkShiftNotStartedException.class, () -> userService.endShift(USER_ID));
 	}
 	
 	@Test
@@ -180,7 +205,7 @@ public class UserServiceTests
 		WorkShift currentWorkShift = new WorkShift(START_TIME);
 		user.setCurrentWorkShift(currentWorkShift);
 		
-		userService.endShift(user);
+		userService.endShift(USER_ID);
 		
 		assertEquals(currentWorkShift, user.getPriorWorkShifts().get(0));
 	}
@@ -192,7 +217,7 @@ public class UserServiceTests
 		WorkShift currentWorkShift = new WorkShift(START_TIME);
 		user.setCurrentWorkShift(currentWorkShift);
 		
-		userService.endShift(user);
+		userService.endShift(USER_ID);
 		
 		assertEquals(END_TIME, currentWorkShift.getEndTime());
 	}
@@ -202,7 +227,7 @@ public class UserServiceTests
 	{
 		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		
-		userService.endShift(user);
+		userService.endShift(USER_ID);
 		
 		assertNull(user.getCurrentWorkShift());
 	}
@@ -212,31 +237,19 @@ public class UserServiceTests
 	{
 		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		
-		userService.endShift(user);
+		userService.endShift(USER_ID);
 		
 		verify(userRepository).update(user);
 	}
 	
 	@Test
-	public void endShift_When_CurrentWorkShiftExists_Then_ReturnsUser() throws WorkShiftNotStartedException, UserNotFoundException
-	{
-		User otherUser = new User(USER_ID);
-		when(userRepository.update(any())).thenReturn(otherUser);
-		user.setCurrentWorkShift(new WorkShift(START_TIME));
-		
-		User actual = userService.endShift(user);
-		
-		assertEquals(otherUser, actual);
-	}
-	
-	@Test
-	public void endShift_When_UserRepositoryThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
+	public void endShift_When_UserRepositorySaveThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
 	{
 		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		
 		when(userRepository.update(any())).thenThrow(new UserNotFoundException());
 		
-		assertThrows(UserNotFoundException.class, () -> userService.endShift(user));
+		assertThrows(UserNotFoundException.class, () -> userService.endShift(USER_ID));
 	}
 	
 	//endregion

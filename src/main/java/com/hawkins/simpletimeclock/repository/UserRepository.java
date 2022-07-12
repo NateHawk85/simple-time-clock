@@ -29,6 +29,7 @@ public class UserRepository
 	public User find(String userId) throws UserNotFoundException
 	{
 		User user = users.get(userId);
+		
 		if (user == null)
 		{
 			throw new UserNotFoundException();

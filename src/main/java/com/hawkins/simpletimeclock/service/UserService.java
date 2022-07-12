@@ -7,7 +7,6 @@ import com.hawkins.simpletimeclock.exception.UserNotFoundException;
 import com.hawkins.simpletimeclock.exception.WorkShiftAlreadyStartedException;
 import com.hawkins.simpletimeclock.exception.WorkShiftNotStartedException;
 import com.hawkins.simpletimeclock.repository.UserRepository;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -32,8 +31,10 @@ public class UserService
 		return userRepository.find(userId);
 	}
 	
-	public User startShift(@NonNull User user) throws WorkShiftAlreadyStartedException, UserNotFoundException
+	public void startShift(String userId) throws WorkShiftAlreadyStartedException, UserNotFoundException
 	{
+		User user = userRepository.find(userId);
+		
 		if (user.getCurrentWorkShift() != null)
 		{
 			throw new WorkShiftAlreadyStartedException();
@@ -41,11 +42,13 @@ public class UserService
 		
 		user.setCurrentWorkShift(new WorkShift(clock.now()));
 		
-		return userRepository.update(user);
+		userRepository.update(user);
 	}
 	
-	public User endShift(@NonNull User user) throws WorkShiftNotStartedException, UserNotFoundException
+	public void endShift(String userId) throws WorkShiftNotStartedException, UserNotFoundException
 	{
+		User user = userRepository.find(userId);
+		
 		if (user.getCurrentWorkShift() == null)
 		{
 			throw new WorkShiftNotStartedException();
@@ -55,6 +58,6 @@ public class UserService
 		user.getPriorWorkShifts().add(user.getCurrentWorkShift());
 		user.setCurrentWorkShift(null);
 		
-		return userRepository.update(user);
+		userRepository.update(user);
 	}
 }
