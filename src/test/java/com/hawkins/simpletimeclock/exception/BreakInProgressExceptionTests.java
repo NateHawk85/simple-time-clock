@@ -7,15 +7,15 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class BreakAlreadyStartedExceptionTests
+public class BreakInProgressExceptionTests
 {
 	@Test
 	public void class_HasCorrectAnnotations()
 	{
-		ResponseStatus annotation = BreakAlreadyStartedException.class.getAnnotation(ResponseStatus.class);
+		ResponseStatus annotation = BreakInProgressException.class.getAnnotation(ResponseStatus.class);
 		
 		assertNotNull(annotation);
-		assertEquals(HttpStatus.CONFLICT, annotation.value());
-		assertEquals("Break Already Started", annotation.reason());
+		assertEquals(HttpStatus.CONFLICT, annotation.code());
+		assertEquals("Break is in progress", annotation.reason());
 	}
 }

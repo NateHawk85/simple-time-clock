@@ -7,15 +7,15 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class WorkShiftAlreadyStartedExceptionTests
+public class WorkShiftInProgressExceptionTests
 {
 	@Test
 	public void class_HasCorrectAnnotations()
 	{
-		ResponseStatus annotation = WorkShiftAlreadyStartedException.class.getAnnotation(ResponseStatus.class);
+		ResponseStatus annotation = WorkShiftInProgressException.class.getAnnotation(ResponseStatus.class);
 		
 		assertNotNull(annotation);
 		assertEquals(HttpStatus.CONFLICT, annotation.value());
-		assertEquals("Work Shift Already Started", annotation.reason());
+		assertEquals("Work shift is in progress", annotation.reason());
 	}
 }

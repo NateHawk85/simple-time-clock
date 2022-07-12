@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -164,7 +163,7 @@ public class SimpleTimeClockControllerTests
 	
 	@ParameterizedTest
 	@ValueSource(strings = {USER_ID, "123456789"})
-	public void startShift_CallsUserService(String userId) throws UserNotFoundException, WorkShiftAlreadyStartedException
+	public void startShift_CallsUserService(String userId) throws UserNotFoundException, WorkShiftInProgressException
 	{
 		controller.startShift(userId);
 		
@@ -172,7 +171,7 @@ public class SimpleTimeClockControllerTests
 	}
 	
 	@Test
-	public void startShift_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException, WorkShiftAlreadyStartedException
+	public void startShift_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException, WorkShiftInProgressException
 	{
 		doThrow(new UserNotFoundException()).when(userService).startShift(anyString());
 		
@@ -180,12 +179,12 @@ public class SimpleTimeClockControllerTests
 	}
 	
 	@Test
-	public void startShift_When_UserServiceThrowsWorkShiftAlreadyStartedException_Then_ThrowsSameException() throws UserNotFoundException,
-																													WorkShiftAlreadyStartedException
+	public void startShift_When_UserServiceThrowsWorkShiftInProgressException_Then_ThrowsSameException()
+			throws UserNotFoundException, WorkShiftInProgressException
 	{
-		doThrow(new WorkShiftAlreadyStartedException()).when(userService).startShift(anyString());
+		doThrow(new WorkShiftInProgressException()).when(userService).startShift(anyString());
 		
-		assertThrows(WorkShiftAlreadyStartedException.class, () -> controller.startShift(USER_ID));
+		assertThrows(WorkShiftInProgressException.class, () -> controller.startShift(USER_ID));
 	}
 	
 	//endregion
@@ -201,7 +200,7 @@ public class SimpleTimeClockControllerTests
 	
 	@ParameterizedTest
 	@ValueSource(strings = {USER_ID, "123456789"})
-	public void endShift_CallsUserService(String userId) throws UserNotFoundException, WorkShiftNotStartedException
+	public void endShift_CallsUserService(String userId) throws UserNotFoundException, WorkShiftNotStartedException, BreakInProgressException
 	{
 		controller.endShift(userId);
 		
@@ -209,7 +208,8 @@ public class SimpleTimeClockControllerTests
 	}
 	
 	@Test
-	public void endShift_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException, WorkShiftNotStartedException
+	public void endShift_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException()
+			throws UserNotFoundException, WorkShiftNotStartedException, BreakInProgressException
 	{
 		doThrow(new UserNotFoundException()).when(userService).endShift(anyString());
 		
@@ -217,12 +217,21 @@ public class SimpleTimeClockControllerTests
 	}
 	
 	@Test
-	public void endShift_When_UserServiceThrowsWorkShiftNotStartedException_Then_ThrowsSameException() throws UserNotFoundException,
-																											  WorkShiftNotStartedException
+	public void endShift_When_UserServiceThrowsWorkShiftNotStartedException_Then_ThrowsSameException()
+			throws UserNotFoundException, WorkShiftNotStartedException, BreakInProgressException
 	{
 		doThrow(new WorkShiftNotStartedException()).when(userService).endShift(anyString());
 		
 		assertThrows(WorkShiftNotStartedException.class, () -> controller.endShift(USER_ID));
+	}
+	
+	@Test
+	public void endShift_When_UserServiceThrowsBreakInProgressException_Then_ThrowsSameException()
+			throws UserNotFoundException, WorkShiftNotStartedException, BreakInProgressException
+	{
+		doThrow(new BreakInProgressException()).when(userService).endShift(anyString());
+		
+		assertThrows(BreakInProgressException.class, () -> controller.endShift(USER_ID));
 	}
 	
 	//endregion
@@ -245,7 +254,7 @@ public class SimpleTimeClockControllerTests
 	
 	@ParameterizedTest
 	@ValueSource(strings = {USER_ID, "123456789"})
-	public void startBreak_CallsUserService_NullBreakType(String userId) throws UserNotFoundException, BreakAlreadyStartedException
+	public void startBreak_CallsUserService_NullBreakType(String userId) throws UserNotFoundException, BreakInProgressException, WorkShiftNotStartedException
 	{
 		controller.startBreak(userId, null);
 		
@@ -254,7 +263,7 @@ public class SimpleTimeClockControllerTests
 	
 	@ParameterizedTest
 	@ValueSource(strings = {USER_ID, "123456789"})
-	public void startBreak_CallsUserService_Break(String userId) throws UserNotFoundException, BreakAlreadyStartedException
+	public void startBreak_CallsUserService_Break(String userId) throws UserNotFoundException, BreakInProgressException, WorkShiftNotStartedException
 	{
 		controller.startBreak(userId, BreakType.Break);
 		
@@ -263,7 +272,7 @@ public class SimpleTimeClockControllerTests
 	
 	@ParameterizedTest
 	@ValueSource(strings = {USER_ID, "123456789"})
-	public void startBreak_CallsUserService_Lunch(String userId) throws UserNotFoundException, BreakAlreadyStartedException
+	public void startBreak_CallsUserService_Lunch(String userId) throws UserNotFoundException, BreakInProgressException, WorkShiftNotStartedException
 	{
 		controller.startBreak(userId, BreakType.Lunch);
 		
@@ -271,7 +280,8 @@ public class SimpleTimeClockControllerTests
 	}
 	
 	@Test
-	public void startBreak_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException, BreakAlreadyStartedException
+	public void startBreak_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException()
+			throws UserNotFoundException, BreakInProgressException, WorkShiftNotStartedException
 	{
 		doThrow(new UserNotFoundException()).when(userService).startBreak(anyString(), any());
 		
@@ -279,12 +289,21 @@ public class SimpleTimeClockControllerTests
 	}
 	
 	@Test
-	public void startBreak_When_UserServiceThrowsBreakAlreadyStartedException_Then_ThrowsSameException() throws UserNotFoundException,
-																												BreakAlreadyStartedException
+	public void startBreak_When_UserServiceThrowsBreakInProgressException_Then_ThrowsSameException()
+			throws UserNotFoundException, BreakInProgressException, WorkShiftNotStartedException
 	{
-		doThrow(new BreakAlreadyStartedException()).when(userService).startBreak(anyString(), any());
+		doThrow(new BreakInProgressException()).when(userService).startBreak(anyString(), any());
 		
-		assertThrows(BreakAlreadyStartedException.class, () -> controller.startBreak(USER_ID, BreakType.Break));
+		assertThrows(BreakInProgressException.class, () -> controller.startBreak(USER_ID, BreakType.Break));
+	}
+	
+	@Test
+	public void startBreak_When_UserServiceThrowsWorkShiftNotStartedException_Then_ThrowsSameException()
+			throws UserNotFoundException, BreakInProgressException, WorkShiftNotStartedException
+	{
+		doThrow(new WorkShiftNotStartedException()).when(userService).startBreak(anyString(), any());
+		
+		assertThrows(WorkShiftNotStartedException.class, () -> controller.startBreak(USER_ID, BreakType.Break));
 	}
 	
 	//endregion

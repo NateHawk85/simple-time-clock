@@ -40,7 +40,7 @@ public class SimpleTimeClockController
 	}
 	
 	@PostMapping("/user/{userId}/startShift")
-	public ResponseEntity<HttpStatus> startShift(@PathVariable String userId) throws UserNotFoundException, WorkShiftAlreadyStartedException
+	public ResponseEntity<HttpStatus> startShift(@PathVariable String userId) throws UserNotFoundException, WorkShiftInProgressException
 	{
 		userService.startShift(userId);
 		
@@ -48,7 +48,7 @@ public class SimpleTimeClockController
 	}
 	
 	@PostMapping("/user/{userId}/endShift")
-	public ResponseEntity<HttpStatus> endShift(@PathVariable String userId) throws UserNotFoundException, WorkShiftNotStartedException
+	public ResponseEntity<HttpStatus> endShift(@PathVariable String userId) throws UserNotFoundException, WorkShiftNotStartedException, BreakInProgressException
 	{
 		userService.endShift(userId);
 		
@@ -57,7 +57,7 @@ public class SimpleTimeClockController
 	
 	@PostMapping("/user/{userId}/startBreak")
 	public ResponseEntity<HttpStatus> startBreak(@PathVariable String userId, @RequestParam(required = false) BreakType breakType)
-			throws UserNotFoundException, BreakAlreadyStartedException
+			throws UserNotFoundException, BreakInProgressException, WorkShiftNotStartedException
 	{
 		breakType = breakType != null ? breakType : BreakType.Break;
 		

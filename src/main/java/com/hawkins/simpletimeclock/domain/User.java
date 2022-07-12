@@ -10,7 +10,6 @@ public class User
 	private final String userId;
 	private final List<WorkShift> priorWorkShifts = new ArrayList<>();
 	private final List<Break> priorBreaks = new ArrayList<>();
-	private String name;
 	private WorkShift currentWorkShift;
 	private Break currentBreak;
 	private Break currentLunchBreak;
@@ -33,16 +32,6 @@ public class User
 	public List<Break> getPriorBreaks()
 	{
 		return priorBreaks;
-	}
-	
-	public String getName()
-	{
-		return name;
-	}
-	
-	public void setName(String name)
-	{
-		this.name = name;
 	}
 	
 	public WorkShift getCurrentWorkShift()

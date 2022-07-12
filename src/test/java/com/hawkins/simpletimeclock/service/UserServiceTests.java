@@ -22,7 +22,6 @@ import java.time.LocalDateTime;
 
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -122,7 +121,7 @@ public class UserServiceTests
 	
 	@ParameterizedTest
 	@ValueSource(strings = {USER_ID, "123456789"})
-	public void startShift_CallsUserRepositoryForUser(String userId) throws UserNotFoundException, WorkShiftAlreadyStartedException
+	public void startShift_CallsUserRepositoryForUser(String userId) throws UserNotFoundException, WorkShiftInProgressException
 	{
 		userService.startShift(userId);
 		
@@ -142,12 +141,11 @@ public class UserServiceTests
 	{
 		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		
-		assertThrows(WorkShiftAlreadyStartedException.class, () -> userService.startShift(USER_ID));
+		assertThrows(WorkShiftInProgressException.class, () -> userService.startShift(USER_ID));
 	}
 	
 	@Test
-	public void startShift_When_NoCurrentWorkShiftExists_Then_CreatesNewWorkShiftWithCurrentTime() throws WorkShiftAlreadyStartedException,
-																										  UserNotFoundException
+	public void startShift_When_NoCurrentWorkShiftExists_Then_CreatesNewWorkShiftWithCurrentTime() throws WorkShiftInProgressException, UserNotFoundException
 	{
 		userService.startShift(USER_ID);
 		
@@ -155,7 +153,7 @@ public class UserServiceTests
 	}
 	
 	@Test
-	public void startShift_When_NoCurrentWorkShiftExists_Then_CallsUserRepository() throws WorkShiftAlreadyStartedException, UserNotFoundException
+	public void startShift_When_NoCurrentWorkShiftExists_Then_CallsUserRepository() throws WorkShiftInProgressException, UserNotFoundException
 	{
 		userService.startShift(USER_ID);
 		
@@ -176,7 +174,7 @@ public class UserServiceTests
 	
 	@ParameterizedTest
 	@ValueSource(strings = {USER_ID, "123456789"})
-	public void endShift_CallsUserRepositoryForUser(String userId) throws UserNotFoundException, WorkShiftNotStartedException
+	public void endShift_CallsUserRepositoryForUser(String userId) throws UserNotFoundException, WorkShiftNotStartedException, BreakInProgressException
 	{
 		WorkShift currentWorkShift = new WorkShift(START_TIME);
 		user.setCurrentWorkShift(currentWorkShift);
@@ -194,13 +192,32 @@ public class UserServiceTests
 	}
 	
 	@Test
+	public void endShift_When_CurrentBreakExists_Then_ThrowsBreakInProgressException()
+	{
+		user.setCurrentBreak(new Break(BreakType.Break, START_TIME));
+		user.setCurrentWorkShift(new WorkShift(START_TIME));
+		
+		assertThrows(BreakInProgressException.class, () -> userService.endShift(USER_ID));
+	}
+	
+	@Test
+	public void endShift_When_CurrentLunchBreakExists_Then_ThrowsBreakInProgressException()
+	{
+		user.setCurrentLunchBreak(new Break(BreakType.Lunch, START_TIME));
+		user.setCurrentWorkShift(new WorkShift(START_TIME));
+		
+		assertThrows(BreakInProgressException.class, () -> userService.endShift(USER_ID));
+	}
+	
+	@Test
 	public void endShift_When_NoCurrentWorkShiftExists_Then_ThrowsWorkShiftNotStartedException()
 	{
 		assertThrows(WorkShiftNotStartedException.class, () -> userService.endShift(USER_ID));
 	}
 	
 	@Test
-	public void endShift_When_CurrentWorkShiftExists_Then_AddsCurrentWorkShiftToPriorWorkShifts() throws UserNotFoundException, WorkShiftNotStartedException
+	public void endShift_When_CurrentWorkShiftExists_Then_AddsCurrentWorkShiftToPriorWorkShifts()
+			throws UserNotFoundException, WorkShiftNotStartedException, BreakInProgressException
 	{
 		WorkShift currentWorkShift = new WorkShift(START_TIME);
 		user.setCurrentWorkShift(currentWorkShift);
@@ -211,7 +228,8 @@ public class UserServiceTests
 	}
 	
 	@Test
-	public void endShift_When_CurrentWorkShiftExists_Then_SetsEndTimeOnCurrentWorkShift() throws UserNotFoundException, WorkShiftNotStartedException
+	public void endShift_When_CurrentWorkShiftExists_Then_SetsEndTimeOnCurrentWorkShift()
+			throws UserNotFoundException, WorkShiftNotStartedException, BreakInProgressException
 	{
 		when(clock.now()).thenReturn(END_TIME);
 		WorkShift currentWorkShift = new WorkShift(START_TIME);
@@ -223,7 +241,8 @@ public class UserServiceTests
 	}
 	
 	@Test
-	public void endShift_When_CurrentWorkShiftExists_Then_SetsCurrentWorkShiftToNull() throws WorkShiftNotStartedException, UserNotFoundException
+	public void endShift_When_CurrentWorkShiftExists_Then_SetsCurrentWorkShiftToNull()
+			throws WorkShiftNotStartedException, UserNotFoundException, BreakInProgressException
 	{
 		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		
@@ -233,7 +252,8 @@ public class UserServiceTests
 	}
 	
 	@Test
-	public void endShift_When_CurrentWorkShiftExists_Then_CallsUserRepository() throws WorkShiftNotStartedException, UserNotFoundException
+	public void endShift_When_CurrentWorkShiftExists_Then_CallsUserRepository()
+			throws WorkShiftNotStartedException, UserNotFoundException, BreakInProgressException
 	{
 		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		
@@ -258,8 +278,10 @@ public class UserServiceTests
 	
 	@ParameterizedTest
 	@ValueSource(strings = {USER_ID, "123456789"})
-	public void startBreak_CallsUserRepositoryForUser(String userId) throws UserNotFoundException, BreakAlreadyStartedException
+	public void startBreak_CallsUserRepositoryForUser(String userId) throws UserNotFoundException, BreakInProgressException, WorkShiftNotStartedException
 	{
+		user.setCurrentWorkShift(new WorkShift(START_TIME));
+		
 		userService.startBreak(userId, BreakType.Break);
 		
 		verify(userRepository).find(userId);
@@ -273,20 +295,29 @@ public class UserServiceTests
 		assertThrows(UserNotFoundException.class, () -> userService.startBreak(USER_ID, BreakType.Break));
 	}
 	
+	@Test
+	public void startBreak_When_NoCurrentWorkShiftExists_Then_ThrowsWorkShiftNotStartedException()
+	{
+		assertThrows(WorkShiftNotStartedException.class, () -> userService.startBreak(USER_ID, BreakType.Break));
+	}
+	
 	//region Break
 	
 	@Test
-	public void startBreak_When_CurrentBreakExistsAndBreakTypeIsBreak_Then_ThrowsBreakAlreadyStartedException()
+	public void startBreak_When_CurrentBreakExistsAndBreakTypeIsBreak_Then_ThrowsBreakInProgressException()
 	{
+		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		user.setCurrentBreak(new Break(BreakType.Break, START_TIME));
 		
-		assertThrows(BreakAlreadyStartedException.class, () -> userService.startBreak(USER_ID, BreakType.Break));
+		assertThrows(BreakInProgressException.class, () -> userService.startBreak(USER_ID, BreakType.Break));
 	}
 	
 	@Test
-	public void startBreak_When_NoCurrentBreakExists_Then_CreatesNewBreakWithCurrentTimeAndBreakType() throws BreakAlreadyStartedException,
-																											  UserNotFoundException
+	public void startBreak_When_NoCurrentBreakExists_Then_CreatesNewBreakWithCurrentTimeAndBreakType()
+			throws BreakInProgressException, UserNotFoundException, WorkShiftNotStartedException
 	{
+		user.setCurrentWorkShift(new WorkShift(START_TIME));
+		
 		userService.startBreak(USER_ID, BreakType.Break);
 		
 		assertNull(user.getCurrentLunchBreak());
@@ -295,9 +326,10 @@ public class UserServiceTests
 	}
 	
 	@Test
-	public void startBreak_When_CurrentLunchBreakExistsAndBreakTypeIsBreak_Then_CreatesNewBreakWithCurrentTimeAndBreakType() throws UserNotFoundException,
-																																	BreakAlreadyStartedException
+	public void startBreak_When_CurrentLunchBreakExistsAndBreakTypeIsBreak_Then_CreatesNewBreakWithCurrentTimeAndBreakType()
+			throws UserNotFoundException, BreakInProgressException, WorkShiftNotStartedException
 	{
+		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		user.setCurrentLunchBreak(new Break(BreakType.Lunch, START_TIME));
 		
 		userService.startBreak(USER_ID, BreakType.Break);
@@ -306,30 +338,24 @@ public class UserServiceTests
 		assertEquals(BreakType.Break, user.getCurrentBreak().getBreakType());
 	}
 	
-	@Test
-	public void startBreak_When_NoCurrentBreakExists_Then_CallsUserRepository() throws BreakAlreadyStartedException, UserNotFoundException
-	{
-		userService.startBreak(USER_ID, BreakType.Break);
-		
-		verify(userRepository).update(user);
-	}
-	
 	//endregion
 	
 	//region Lunch
 	
 	@Test
-	public void startBreak_When_CurrentLunchBreakExistsAndBreakTypeIsLunch_Then_ThrowsBreakAlreadyStartedException()
+	public void startBreak_When_CurrentLunchBreakExistsAndBreakTypeIsLunch_Then_ThrowsBreakInProgressException()
 	{
+		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		user.setCurrentLunchBreak(new Break(BreakType.Lunch, START_TIME));
 		
-		assertThrows(BreakAlreadyStartedException.class, () -> userService.startBreak(USER_ID, BreakType.Lunch));
+		assertThrows(BreakInProgressException.class, () -> userService.startBreak(USER_ID, BreakType.Lunch));
 	}
 	
 	@Test
-	public void startBreak_When_NoCurrentLunchBreakExists_Then_CreatesNewLunchBreakWithCurrentTimeAndLunchType() throws BreakAlreadyStartedException,
-																														UserNotFoundException
+	public void startBreak_When_NoCurrentLunchBreakExists_Then_CreatesNewLunchBreakWithCurrentTimeAndLunchType()
+			throws BreakInProgressException, UserNotFoundException, WorkShiftNotStartedException
 	{
+		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		userService.startBreak(USER_ID, BreakType.Lunch);
 		
 		assertNull(user.getCurrentBreak());
@@ -339,8 +365,9 @@ public class UserServiceTests
 	
 	@Test
 	public void startBreak_When_CurrentBreakExistsAndBreakTypeIsLunch_Then_CreatesNewLunchBreakWithCurrentTimeAndLunchType()
-			throws BreakAlreadyStartedException, UserNotFoundException
+			throws BreakInProgressException, UserNotFoundException, WorkShiftNotStartedException
 	{
+		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		user.setCurrentBreak(new Break(BreakType.Break, START_TIME));
 		
 		userService.startBreak(USER_ID, BreakType.Lunch);
@@ -349,20 +376,24 @@ public class UserServiceTests
 		assertEquals(BreakType.Lunch, user.getCurrentLunchBreak().getBreakType());
 	}
 	
+	//endregion
+	
 	@Test
-	public void startBreak_When_NoCurrentLunchBreakExists_Then_CallsUserRepository() throws BreakAlreadyStartedException, UserNotFoundException
+	public void startBreak_When_NoCurrentBreakExists_Then_CallsUserRepository()
+			throws BreakInProgressException, UserNotFoundException, WorkShiftNotStartedException
 	{
-		userService.startBreak(USER_ID, BreakType.Lunch);
+		user.setCurrentWorkShift(new WorkShift(START_TIME));
+		
+		userService.startBreak(USER_ID, BreakType.Break);
 		
 		verify(userRepository).update(user);
 	}
-	
-	//endregion
 	
 	@Test
 	public void startBreak_When_UserRepositorySaveThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
 	{
 		when(userRepository.update(any())).thenThrow(new UserNotFoundException());
+		user.setCurrentWorkShift(new WorkShift(START_TIME));
 		
 		assertThrows(UserNotFoundException.class, () -> userService.startBreak(USER_ID, BreakType.Break));
 	}
@@ -378,18 +409,18 @@ public class UserServiceTests
 		Break currentBreak = new Break(BreakType.Break, START_TIME);
 		user.setCurrentBreak(currentBreak);
 		userService.endBreak(userId);
-
+		
 		verify(userRepository).find(userId);
 	}
-
+	
 	@Test
 	public void endBreak_When_UserRepositoryFindThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
 	{
 		when(userRepository.find(anyString())).thenThrow(new UserNotFoundException());
-
+		
 		assertThrows(UserNotFoundException.class, () -> userService.endBreak(USER_ID));
 	}
-
+	
 	@Test
 	public void endBreak_When_NoCurrentBreakExists_Then_ThrowsBreakNotStartedException()
 	{
@@ -503,14 +534,14 @@ public class UserServiceTests
 		assertEquals(singletonList(currentBreak), user.getPriorBreaks());
 		assertEquals(currentLunchBreak, user.getCurrentLunchBreak());
 	}
-
+	
 	@Test
 	public void endBreak_When_UserRepositorySaveThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
 	{
 		user.setCurrentBreak(new Break(BreakType.Break, START_TIME));
-
+		
 		when(userRepository.update(any())).thenThrow(new UserNotFoundException());
-
+		
 		assertThrows(UserNotFoundException.class, () -> userService.endBreak(USER_ID));
 	}
 	

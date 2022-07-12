@@ -30,28 +30,21 @@ public class UserService
 		return userRepository.find(userId);
 	}
 	
-	public void startShift(String userId) throws UserNotFoundException, WorkShiftAlreadyStartedException
+	public void startShift(String userId) throws UserNotFoundException, WorkShiftInProgressException
 	{
 		User user = userRepository.find(userId);
-		
-		if (user.getCurrentWorkShift() != null)
-		{
-			throw new WorkShiftAlreadyStartedException();
-		}
+		validateUserNotWorking(user);
 		
 		user.setCurrentWorkShift(new WorkShift(clock.now()));
 		
 		userRepository.update(user);
 	}
 	
-	public void endShift(String userId) throws UserNotFoundException, WorkShiftNotStartedException
+	public void endShift(String userId) throws UserNotFoundException, WorkShiftNotStartedException, BreakInProgressException
 	{
 		User user = userRepository.find(userId);
-		
-		if (user.getCurrentWorkShift() == null)
-		{
-			throw new WorkShiftNotStartedException();
-		}
+		validateUserIsWorking(user);
+		validateUserNotOnBreak(user);
 		
 		user.getCurrentWorkShift().setEndTime(clock.now());
 		user.getPriorWorkShifts().add(user.getCurrentWorkShift());
@@ -60,15 +53,16 @@ public class UserService
 		userRepository.update(user);
 	}
 	
-	public void startBreak(String userId, BreakType breakType) throws UserNotFoundException, BreakAlreadyStartedException
+	public void startBreak(String userId, BreakType breakType) throws UserNotFoundException, BreakInProgressException, WorkShiftNotStartedException
 	{
 		User user = userRepository.find(userId);
+		validateUserIsWorking(user);
 		
 		if (breakType == BreakType.Break)
 		{
 			if (user.getCurrentBreak() != null)
 			{
-				throw new BreakAlreadyStartedException();
+				throw new BreakInProgressException();
 			}
 			
 			user.setCurrentBreak(new Break(breakType, clock.now()));
@@ -77,7 +71,7 @@ public class UserService
 		{
 			if (user.getCurrentLunchBreak() != null)
 			{
-				throw new BreakAlreadyStartedException();
+				throw new BreakInProgressException();
 			}
 			
 			user.setCurrentLunchBreak(new Break(breakType, clock.now()));
@@ -106,5 +100,29 @@ public class UserService
 		}
 		
 		userRepository.update(user);
+	}
+	
+	private void validateUserIsWorking(User user) throws WorkShiftNotStartedException
+	{
+		if (user.getCurrentWorkShift() == null)
+		{
+			throw new WorkShiftNotStartedException();
+		}
+	}
+	
+	private void validateUserNotWorking(User user) throws WorkShiftInProgressException
+	{
+		if (user.getCurrentWorkShift() != null)
+		{
+			throw new WorkShiftInProgressException();
+		}
+	}
+	
+	private void validateUserNotOnBreak(User user) throws BreakInProgressException
+	{
+		if (user.getCurrentBreak() != null || user.getCurrentLunchBreak() != null)
+		{
+			throw new BreakInProgressException();
+		}
 	}
 }

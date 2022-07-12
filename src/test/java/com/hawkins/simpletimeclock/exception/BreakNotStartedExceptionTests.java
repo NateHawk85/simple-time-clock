@@ -16,6 +16,6 @@ public class BreakNotStartedExceptionTests
 		
 		assertNotNull(annotation);
 		assertEquals(HttpStatus.CONFLICT, annotation.value());
-		assertEquals("Break Not Started", annotation.reason());
+		assertEquals("Break has not started", annotation.reason());
 	}
 }

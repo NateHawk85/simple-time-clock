@@ -16,6 +16,6 @@ public class WorkShiftNotStartedExceptionTests
 		
 		assertNotNull(annotation);
 		assertEquals(HttpStatus.CONFLICT, annotation.value());
-		assertEquals("Work Shift Not Started", annotation.reason());
+		assertEquals("Work shift has not started", annotation.reason());
 	}
 }
