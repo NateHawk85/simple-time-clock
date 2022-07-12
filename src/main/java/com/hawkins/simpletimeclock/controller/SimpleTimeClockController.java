@@ -1,18 +1,13 @@
 package com.hawkins.simpletimeclock.controller;
 
 import com.hawkins.simpletimeclock.domain.User;
-import com.hawkins.simpletimeclock.exception.UserAlreadyExistsException;
-import com.hawkins.simpletimeclock.exception.UserNotFoundException;
-import com.hawkins.simpletimeclock.exception.WorkShiftAlreadyStartedException;
-import com.hawkins.simpletimeclock.exception.WorkShiftNotStartedException;
+import com.hawkins.simpletimeclock.enums.BreakType;
+import com.hawkins.simpletimeclock.exception.*;
 import com.hawkins.simpletimeclock.service.ContextURIService;
 import com.hawkins.simpletimeclock.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 
@@ -49,7 +44,7 @@ public class SimpleTimeClockController
 	{
 		userService.startShift(userId);
 		
-		return new ResponseEntity<>(HttpStatus.OK);
+		return new ResponseEntity<>(HttpStatus.ACCEPTED);
 	}
 	
 	@PostMapping("/user/{userId}/endShift")
@@ -57,6 +52,25 @@ public class SimpleTimeClockController
 	{
 		userService.endShift(userId);
 		
-		return new ResponseEntity<>(HttpStatus.OK);
+		return new ResponseEntity<>(HttpStatus.ACCEPTED);
+	}
+	
+	@PostMapping("/user/{userId}/startBreak")
+	public ResponseEntity<HttpStatus> startBreak(@PathVariable String userId, @RequestParam(required = false) BreakType breakType)
+			throws UserNotFoundException, BreakAlreadyStartedException
+	{
+		breakType = breakType != null ? breakType : BreakType.Break;
+		
+		userService.startBreak(userId, breakType);
+		
+		return new ResponseEntity<>(HttpStatus.ACCEPTED);
+	}
+	
+	@PostMapping("/user/{userId}/endBreak")
+	public ResponseEntity<HttpStatus> endBreak(@PathVariable String userId) throws UserNotFoundException, BreakNotStartedException
+	{
+		userService.endBreak(userId);
+		
+		return new ResponseEntity<>(HttpStatus.ACCEPTED);
 	}
 }

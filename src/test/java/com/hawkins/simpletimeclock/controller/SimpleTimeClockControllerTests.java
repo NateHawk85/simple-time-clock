@@ -1,10 +1,8 @@
 package com.hawkins.simpletimeclock.controller;
 
 import com.hawkins.simpletimeclock.domain.User;
-import com.hawkins.simpletimeclock.exception.UserAlreadyExistsException;
-import com.hawkins.simpletimeclock.exception.UserNotFoundException;
-import com.hawkins.simpletimeclock.exception.WorkShiftAlreadyStartedException;
-import com.hawkins.simpletimeclock.exception.WorkShiftNotStartedException;
+import com.hawkins.simpletimeclock.enums.BreakType;
+import com.hawkins.simpletimeclock.exception.*;
 import com.hawkins.simpletimeclock.service.ContextURIService;
 import com.hawkins.simpletimeclock.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -161,7 +159,7 @@ public class SimpleTimeClockControllerTests
 	public void startShift_EndpointExists() throws Exception
 	{
 		mockMvc.perform(MockMvcRequestBuilders.post("/user/987654321/startShift"))
-				.andExpect(status().isOk());
+				.andExpect(status().isAccepted());
 	}
 	
 	@ParameterizedTest
@@ -198,7 +196,7 @@ public class SimpleTimeClockControllerTests
 	public void endShift_EndpointExists() throws Exception
 	{
 		mockMvc.perform(MockMvcRequestBuilders.post("/user/987654321/endShift"))
-				.andExpect(status().isOk());
+				.andExpect(status().isAccepted());
 	}
 	
 	@ParameterizedTest
@@ -225,6 +223,104 @@ public class SimpleTimeClockControllerTests
 		doThrow(new WorkShiftNotStartedException()).when(userService).endShift(anyString());
 		
 		assertThrows(WorkShiftNotStartedException.class, () -> controller.endShift(USER_ID));
+	}
+	
+	//endregion
+	
+	//region startBreak
+	
+	@Test
+	public void startBreak_EndpointExists() throws Exception
+	{
+		mockMvc.perform(MockMvcRequestBuilders.post("/user/987654321/startBreak"))
+				.andExpect(status().isAccepted());
+	}
+	
+	@Test
+	public void startBreak_EndpointExistsWithOptionalParameters() throws Exception
+	{
+		mockMvc.perform(MockMvcRequestBuilders.post("/user/987654321/startBreak?breakType=Break"))
+				.andExpect(status().isAccepted());
+	}
+	
+	@ParameterizedTest
+	@ValueSource(strings = {USER_ID, "123456789"})
+	public void startBreak_CallsUserService_NullBreakType(String userId) throws UserNotFoundException, BreakAlreadyStartedException
+	{
+		controller.startBreak(userId, null);
+		
+		verify(userService).startBreak(userId, BreakType.Break);
+	}
+	
+	@ParameterizedTest
+	@ValueSource(strings = {USER_ID, "123456789"})
+	public void startBreak_CallsUserService_Break(String userId) throws UserNotFoundException, BreakAlreadyStartedException
+	{
+		controller.startBreak(userId, BreakType.Break);
+		
+		verify(userService).startBreak(userId, BreakType.Break);
+	}
+	
+	@ParameterizedTest
+	@ValueSource(strings = {USER_ID, "123456789"})
+	public void startBreak_CallsUserService_Lunch(String userId) throws UserNotFoundException, BreakAlreadyStartedException
+	{
+		controller.startBreak(userId, BreakType.Lunch);
+		
+		verify(userService).startBreak(userId, BreakType.Lunch);
+	}
+	
+	@Test
+	public void startBreak_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException, BreakAlreadyStartedException
+	{
+		doThrow(new UserNotFoundException()).when(userService).startBreak(anyString(), any());
+		
+		assertThrows(UserNotFoundException.class, () -> controller.startBreak(USER_ID, BreakType.Break));
+	}
+	
+	@Test
+	public void startBreak_When_UserServiceThrowsBreakAlreadyStartedException_Then_ThrowsSameException() throws UserNotFoundException,
+																												BreakAlreadyStartedException
+	{
+		doThrow(new BreakAlreadyStartedException()).when(userService).startBreak(anyString(), any());
+		
+		assertThrows(BreakAlreadyStartedException.class, () -> controller.startBreak(USER_ID, BreakType.Break));
+	}
+	
+	//endregion
+	
+	//region endBreak
+	
+	@Test
+	public void endBreak_EndpointExists() throws Exception
+	{
+		mockMvc.perform(MockMvcRequestBuilders.post("/user/987654321/endBreak"))
+				.andExpect(status().isAccepted());
+	}
+	
+	@ParameterizedTest
+	@ValueSource(strings = {USER_ID, "123456789"})
+	public void endBreak_CallsUserService(String userId) throws UserNotFoundException, BreakNotStartedException
+	{
+		controller.endBreak(userId);
+		
+		verify(userService).endBreak(userId);
+	}
+	
+	@Test
+	public void endBreak_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException, BreakNotStartedException
+	{
+		doThrow(new UserNotFoundException()).when(userService).endBreak(anyString());
+		
+		assertThrows(UserNotFoundException.class, () -> controller.endBreak(USER_ID));
+	}
+	
+	@Test
+	public void endBreak_When_UserServiceThrowsBreakNotStartedException_Then_ThrowsSameException() throws UserNotFoundException, BreakNotStartedException
+	{
+		doThrow(new BreakNotStartedException()).when(userService).endBreak(anyString());
+		
+		assertThrows(BreakNotStartedException.class, () -> controller.endBreak(USER_ID));
 	}
 	
 	//endregion

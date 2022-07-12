@@ -1,11 +1,10 @@
 package com.hawkins.simpletimeclock.service;
 
+import com.hawkins.simpletimeclock.domain.Break;
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.domain.WorkShift;
-import com.hawkins.simpletimeclock.exception.UserAlreadyExistsException;
-import com.hawkins.simpletimeclock.exception.UserNotFoundException;
-import com.hawkins.simpletimeclock.exception.WorkShiftAlreadyStartedException;
-import com.hawkins.simpletimeclock.exception.WorkShiftNotStartedException;
+import com.hawkins.simpletimeclock.enums.BreakType;
+import com.hawkins.simpletimeclock.exception.*;
 import com.hawkins.simpletimeclock.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +30,7 @@ public class UserService
 		return userRepository.find(userId);
 	}
 	
-	public void startShift(String userId) throws WorkShiftAlreadyStartedException, UserNotFoundException
+	public void startShift(String userId) throws UserNotFoundException, WorkShiftAlreadyStartedException
 	{
 		User user = userRepository.find(userId);
 		
@@ -45,7 +44,7 @@ public class UserService
 		userRepository.update(user);
 	}
 	
-	public void endShift(String userId) throws WorkShiftNotStartedException, UserNotFoundException
+	public void endShift(String userId) throws UserNotFoundException, WorkShiftNotStartedException
 	{
 		User user = userRepository.find(userId);
 		
@@ -57,6 +56,54 @@ public class UserService
 		user.getCurrentWorkShift().setEndTime(clock.now());
 		user.getPriorWorkShifts().add(user.getCurrentWorkShift());
 		user.setCurrentWorkShift(null);
+		
+		userRepository.update(user);
+	}
+	
+	public void startBreak(String userId, BreakType breakType) throws UserNotFoundException, BreakAlreadyStartedException
+	{
+		User user = userRepository.find(userId);
+		
+		if (breakType == BreakType.Break)
+		{
+			if (user.getCurrentBreak() != null)
+			{
+				throw new BreakAlreadyStartedException();
+			}
+			
+			user.setCurrentBreak(new Break(breakType, clock.now()));
+		}
+		if (breakType == BreakType.Lunch)
+		{
+			if (user.getCurrentLunchBreak() != null)
+			{
+				throw new BreakAlreadyStartedException();
+			}
+			
+			user.setCurrentLunchBreak(new Break(breakType, clock.now()));
+		}
+		
+		userRepository.update(user);
+	}
+	
+	public void endBreak(String userId) throws UserNotFoundException, BreakNotStartedException
+	{
+		User user = userRepository.find(userId);
+		
+		if (user.getCurrentBreak() != null)
+		{
+			user.getCurrentBreak().setEndTime(clock.now());
+			user.getPriorBreaks().add(user.getCurrentBreak());
+			user.setCurrentBreak(null);
+		} else if (user.getCurrentLunchBreak() != null)
+		{
+			user.getCurrentLunchBreak().setEndTime(clock.now());
+			user.getPriorBreaks().add(user.getCurrentLunchBreak());
+			user.setCurrentLunchBreak(null);
+		} else
+		{
+			throw new BreakNotStartedException();
+		}
 		
 		userRepository.update(user);
 	}

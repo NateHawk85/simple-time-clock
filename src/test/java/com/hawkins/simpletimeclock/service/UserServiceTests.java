@@ -1,11 +1,10 @@
 package com.hawkins.simpletimeclock.service;
 
+import com.hawkins.simpletimeclock.domain.Break;
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.domain.WorkShift;
-import com.hawkins.simpletimeclock.exception.UserAlreadyExistsException;
-import com.hawkins.simpletimeclock.exception.UserNotFoundException;
-import com.hawkins.simpletimeclock.exception.WorkShiftAlreadyStartedException;
-import com.hawkins.simpletimeclock.exception.WorkShiftNotStartedException;
+import com.hawkins.simpletimeclock.enums.BreakType;
+import com.hawkins.simpletimeclock.exception.*;
 import com.hawkins.simpletimeclock.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -207,7 +207,7 @@ public class UserServiceTests
 		
 		userService.endShift(USER_ID);
 		
-		assertEquals(currentWorkShift, user.getPriorWorkShifts().get(0));
+		assertEquals(singletonList(currentWorkShift), user.getPriorWorkShifts());
 	}
 	
 	@Test
@@ -250,6 +250,268 @@ public class UserServiceTests
 		when(userRepository.update(any())).thenThrow(new UserNotFoundException());
 		
 		assertThrows(UserNotFoundException.class, () -> userService.endShift(USER_ID));
+	}
+	
+	//endregion
+	
+	//region startBreak
+	
+	@ParameterizedTest
+	@ValueSource(strings = {USER_ID, "123456789"})
+	public void startBreak_CallsUserRepositoryForUser(String userId) throws UserNotFoundException, BreakAlreadyStartedException
+	{
+		userService.startBreak(userId, BreakType.Break);
+		
+		verify(userRepository).find(userId);
+	}
+	
+	@Test
+	public void startBreak_When_UserRepositoryFindThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
+	{
+		when(userRepository.find(anyString())).thenThrow(new UserNotFoundException());
+		
+		assertThrows(UserNotFoundException.class, () -> userService.startBreak(USER_ID, BreakType.Break));
+	}
+	
+	//region Break
+	
+	@Test
+	public void startBreak_When_CurrentBreakExistsAndBreakTypeIsBreak_Then_ThrowsBreakAlreadyStartedException()
+	{
+		user.setCurrentBreak(new Break(BreakType.Break, START_TIME));
+		
+		assertThrows(BreakAlreadyStartedException.class, () -> userService.startBreak(USER_ID, BreakType.Break));
+	}
+	
+	@Test
+	public void startBreak_When_NoCurrentBreakExists_Then_CreatesNewBreakWithCurrentTimeAndBreakType() throws BreakAlreadyStartedException,
+																											  UserNotFoundException
+	{
+		userService.startBreak(USER_ID, BreakType.Break);
+		
+		assertNull(user.getCurrentLunchBreak());
+		assertEquals(START_TIME, user.getCurrentBreak().getStartTime());
+		assertEquals(BreakType.Break, user.getCurrentBreak().getBreakType());
+	}
+	
+	@Test
+	public void startBreak_When_CurrentLunchBreakExistsAndBreakTypeIsBreak_Then_CreatesNewBreakWithCurrentTimeAndBreakType() throws UserNotFoundException,
+																																	BreakAlreadyStartedException
+	{
+		user.setCurrentLunchBreak(new Break(BreakType.Lunch, START_TIME));
+		
+		userService.startBreak(USER_ID, BreakType.Break);
+		
+		assertEquals(START_TIME, user.getCurrentBreak().getStartTime());
+		assertEquals(BreakType.Break, user.getCurrentBreak().getBreakType());
+	}
+	
+	@Test
+	public void startBreak_When_NoCurrentBreakExists_Then_CallsUserRepository() throws BreakAlreadyStartedException, UserNotFoundException
+	{
+		userService.startBreak(USER_ID, BreakType.Break);
+		
+		verify(userRepository).update(user);
+	}
+	
+	//endregion
+	
+	//region Lunch
+	
+	@Test
+	public void startBreak_When_CurrentLunchBreakExistsAndBreakTypeIsLunch_Then_ThrowsBreakAlreadyStartedException()
+	{
+		user.setCurrentLunchBreak(new Break(BreakType.Lunch, START_TIME));
+		
+		assertThrows(BreakAlreadyStartedException.class, () -> userService.startBreak(USER_ID, BreakType.Lunch));
+	}
+	
+	@Test
+	public void startBreak_When_NoCurrentLunchBreakExists_Then_CreatesNewLunchBreakWithCurrentTimeAndLunchType() throws BreakAlreadyStartedException,
+																														UserNotFoundException
+	{
+		userService.startBreak(USER_ID, BreakType.Lunch);
+		
+		assertNull(user.getCurrentBreak());
+		assertEquals(START_TIME, user.getCurrentLunchBreak().getStartTime());
+		assertEquals(BreakType.Lunch, user.getCurrentLunchBreak().getBreakType());
+	}
+	
+	@Test
+	public void startBreak_When_CurrentBreakExistsAndBreakTypeIsLunch_Then_CreatesNewLunchBreakWithCurrentTimeAndLunchType()
+			throws BreakAlreadyStartedException, UserNotFoundException
+	{
+		user.setCurrentBreak(new Break(BreakType.Break, START_TIME));
+		
+		userService.startBreak(USER_ID, BreakType.Lunch);
+		
+		assertEquals(START_TIME, user.getCurrentLunchBreak().getStartTime());
+		assertEquals(BreakType.Lunch, user.getCurrentLunchBreak().getBreakType());
+	}
+	
+	@Test
+	public void startBreak_When_NoCurrentLunchBreakExists_Then_CallsUserRepository() throws BreakAlreadyStartedException, UserNotFoundException
+	{
+		userService.startBreak(USER_ID, BreakType.Lunch);
+		
+		verify(userRepository).update(user);
+	}
+	
+	//endregion
+	
+	@Test
+	public void startBreak_When_UserRepositorySaveThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
+	{
+		when(userRepository.update(any())).thenThrow(new UserNotFoundException());
+		
+		assertThrows(UserNotFoundException.class, () -> userService.startBreak(USER_ID, BreakType.Break));
+	}
+	
+	//endregion
+	
+	//region endBreak
+	
+	@ParameterizedTest
+	@ValueSource(strings = {USER_ID, "123456789"})
+	public void endBreak_CallsUserRepositoryForUser(String userId) throws UserNotFoundException, BreakNotStartedException
+	{
+		Break currentBreak = new Break(BreakType.Break, START_TIME);
+		user.setCurrentBreak(currentBreak);
+		userService.endBreak(userId);
+
+		verify(userRepository).find(userId);
+	}
+
+	@Test
+	public void endBreak_When_UserRepositoryFindThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
+	{
+		when(userRepository.find(anyString())).thenThrow(new UserNotFoundException());
+
+		assertThrows(UserNotFoundException.class, () -> userService.endBreak(USER_ID));
+	}
+
+	@Test
+	public void endBreak_When_NoCurrentBreakExists_Then_ThrowsBreakNotStartedException()
+	{
+		assertThrows(BreakNotStartedException.class, () -> userService.endBreak(USER_ID));
+	}
+	
+	//region Break
+	
+	@Test
+	public void endBreak_When_CurrentBreakExists_Then_AddsCurrentBreakToPriorBreaks() throws UserNotFoundException, BreakNotStartedException
+	{
+		Break currentBreak = new Break(BreakType.Break, START_TIME);
+		user.setCurrentBreak(currentBreak);
+		
+		userService.endBreak(USER_ID);
+		
+		assertEquals(singletonList(currentBreak), user.getPriorBreaks());
+	}
+	
+	@Test
+	public void endBreak_When_CurrentBreakExists_Then_SetsEndTimeOnCurrentBreak() throws UserNotFoundException, BreakNotStartedException
+	{
+		when(clock.now()).thenReturn(END_TIME);
+		Break currentBreak = new Break(BreakType.Break, START_TIME);
+		user.setCurrentBreak(currentBreak);
+		
+		userService.endBreak(USER_ID);
+		
+		assertEquals(END_TIME, currentBreak.getEndTime());
+	}
+	
+	@Test
+	public void endBreak_When_CurrentBreakExists_Then_SetsCurrentBreakToNull() throws BreakNotStartedException, UserNotFoundException
+	{
+		user.setCurrentBreak(new Break(BreakType.Break, START_TIME));
+		
+		userService.endBreak(USER_ID);
+		
+		assertNull(user.getCurrentBreak());
+	}
+	
+	@Test
+	public void endBreak_When_CurrentBreakExists_Then_CallsUserRepository() throws BreakNotStartedException, UserNotFoundException
+	{
+		user.setCurrentBreak(new Break(BreakType.Break, START_TIME));
+		
+		userService.endBreak(USER_ID);
+		
+		verify(userRepository).update(user);
+	}
+	
+	//endregion
+	
+	//region Lunch
+	
+	@Test
+	public void endBreak_When_CurrentLunchBreakExists_Then_AddsCurrentLunchBreakToPriorBreaks() throws UserNotFoundException, BreakNotStartedException
+	{
+		Break currentBreak = new Break(BreakType.Lunch, START_TIME);
+		user.setCurrentLunchBreak(currentBreak);
+		
+		userService.endBreak(USER_ID);
+		
+		assertEquals(singletonList(currentBreak), user.getPriorBreaks());
+	}
+	
+	@Test
+	public void endBreak_When_CurrentLunchBreakExists_Then_SetsEndTimeOnCurrentLunchBreak() throws UserNotFoundException, BreakNotStartedException
+	{
+		when(clock.now()).thenReturn(END_TIME);
+		Break currentBreak = new Break(BreakType.Lunch, START_TIME);
+		user.setCurrentLunchBreak(currentBreak);
+		
+		userService.endBreak(USER_ID);
+		
+		assertEquals(END_TIME, currentBreak.getEndTime());
+	}
+	
+	@Test
+	public void endBreak_When_CurrentLunchBreakExists_Then_SetsCurrentLunchBreakToNull() throws BreakNotStartedException, UserNotFoundException
+	{
+		user.setCurrentLunchBreak(new Break(BreakType.Lunch, START_TIME));
+		
+		userService.endBreak(USER_ID);
+		
+		assertNull(user.getCurrentBreak());
+	}
+	
+	@Test
+	public void endBreak_When_CurrentLunchBreakExists_Then_CallsUserRepository() throws BreakNotStartedException, UserNotFoundException
+	{
+		user.setCurrentLunchBreak(new Break(BreakType.Lunch, START_TIME));
+		
+		userService.endBreak(USER_ID);
+		
+		verify(userRepository).update(user);
+	}
+	
+	//endregion
+	
+	@Test
+	public void endBreak_When_BothBreaksExists_Then_AddsCurrentBreakToPriorBreaks() throws UserNotFoundException, BreakNotStartedException
+	{
+		Break currentBreak = new Break(BreakType.Break, START_TIME);
+		user.setCurrentBreak(currentBreak);
+		Break currentLunchBreak = new Break(BreakType.Break, START_TIME);
+		user.setCurrentLunchBreak(currentLunchBreak);
+		
+		userService.endBreak(USER_ID);
+		
+		assertEquals(singletonList(currentBreak), user.getPriorBreaks());
+		assertEquals(currentLunchBreak, user.getCurrentLunchBreak());
+	}
+
+	@Test
+	public void endBreak_When_UserRepositorySaveThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
+	{
+		user.setCurrentBreak(new Break(BreakType.Break, START_TIME));
+
+		when(userRepository.update(any())).thenThrow(new UserNotFoundException());
+
+		assertThrows(UserNotFoundException.class, () -> userService.endBreak(USER_ID));
 	}
 	
 	//endregion
