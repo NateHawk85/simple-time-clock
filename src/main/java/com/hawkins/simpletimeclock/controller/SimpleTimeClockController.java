@@ -40,30 +40,6 @@ public class SimpleTimeClockController
 				.body(user);
 	}
 	
-	@GetMapping("/admin/{adminUserId}/userActivity")
-	public ResponseEntity<Map<String, User>> findUserActivity(@PathVariable String adminUserId,
-															  @RequestParam(required = false) String userIdToView,
-															  @RequestParam(required = false, defaultValue = "0") int priorWorkShiftsThreshold,
-															  @RequestParam(required = false, defaultValue = "0") int priorBreaksThreshold,
-															  @RequestParam(required = false, defaultValue = "false") boolean isCurrentlyOnBreak,
-															  @RequestParam(required = false, defaultValue = "false") boolean isCurrentlyOnLunch,
-															  @RequestParam(required = false)
-															  @DateTimeFormat(pattern = INPUT_DATE_FORMAT) LocalDateTime shiftBeginsBefore,
-															  @RequestParam(required = false)
-															  @DateTimeFormat(pattern = INPUT_DATE_FORMAT) LocalDateTime shiftBeginsAfter,
-															  @RequestParam(required = false)
-															  @DateTimeFormat(pattern = INPUT_DATE_FORMAT) LocalDateTime breakBeginsBefore,
-															  @RequestParam(required = false)
-															  @DateTimeFormat(pattern = INPUT_DATE_FORMAT) LocalDateTime breakBeginsAfter,
-															  @RequestParam(required = false) Role roleToView)
-			throws AccessDeniedException, UserNotFoundException
-	{
-		ReportDataFilters filters = new ReportDataFilters(userIdToView, priorWorkShiftsThreshold, priorBreaksThreshold, isCurrentlyOnBreak, isCurrentlyOnLunch,
-														  roleToView, shiftBeginsBefore, shiftBeginsAfter, breakBeginsBefore, breakBeginsAfter);
-		
-		return ResponseEntity.ok(userService.findUserActivity(adminUserId, filters));
-	}
-	
 	@PostMapping("/user/{userId}/update")
 	public ResponseEntity<User> updateUser(@PathVariable String userId, @RequestParam(required = false) String name, @RequestParam(required = false) Role role)
 			throws UserNotFoundException
@@ -106,5 +82,29 @@ public class SimpleTimeClockController
 		userService.endBreak(userId);
 		
 		return ResponseEntity.accepted().build();
+	}
+	
+	@GetMapping("/admin/{adminUserId}/userActivity")
+	public ResponseEntity<Map<String, User>> findUserActivity(@PathVariable String adminUserId,
+															  @RequestParam(required = false) String userIdToView,
+															  @RequestParam(required = false, defaultValue = "0") int priorWorkShiftsThreshold,
+															  @RequestParam(required = false, defaultValue = "0") int priorBreaksThreshold,
+															  @RequestParam(required = false, defaultValue = "false") boolean isCurrentlyOnBreak,
+															  @RequestParam(required = false, defaultValue = "false") boolean isCurrentlyOnLunch,
+															  @RequestParam(required = false)
+															  @DateTimeFormat(pattern = INPUT_DATE_FORMAT) LocalDateTime shiftBeginsBefore,
+															  @RequestParam(required = false)
+															  @DateTimeFormat(pattern = INPUT_DATE_FORMAT) LocalDateTime shiftBeginsAfter,
+															  @RequestParam(required = false)
+															  @DateTimeFormat(pattern = INPUT_DATE_FORMAT) LocalDateTime breakBeginsBefore,
+															  @RequestParam(required = false)
+															  @DateTimeFormat(pattern = INPUT_DATE_FORMAT) LocalDateTime breakBeginsAfter,
+															  @RequestParam(required = false) Role roleToView)
+			throws AccessDeniedException, UserNotFoundException
+	{
+		ReportDataFilters filters = new ReportDataFilters(userIdToView, priorWorkShiftsThreshold, priorBreaksThreshold, isCurrentlyOnBreak, isCurrentlyOnLunch,
+														  roleToView, shiftBeginsBefore, shiftBeginsAfter, breakBeginsBefore, breakBeginsAfter);
+		
+		return ResponseEntity.ok(userService.findUserActivity(adminUserId, filters));
 	}
 }

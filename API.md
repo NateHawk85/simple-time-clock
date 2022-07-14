@@ -1,4 +1,4 @@
-#### Create User
+### Create User
 - Endpoint: POST "/user/{userId}"
 - Success:
     - Status: 201 CREATED
@@ -7,7 +7,7 @@
     - Status: 409 CONFLICT
     - Body: "User already exists"
 
-#### Update User
+### Update User
 - Endpoint: POST "/user/{userId}/update"
 - Optional Parameters:
     - name: String
@@ -19,7 +19,7 @@
     - Status: 404 NOT FOUND
     - Body: "User not found"
 
-#### Start Shift for User
+### Start Shift for User
 - Endpoint: POST "/user/{userId}/startShift"
 - Success:
     - Status: 202 ACCEPTED
@@ -31,7 +31,7 @@
     - Status: 409 CONFLICT
     - Body: "Work shift is in progress"
 
-#### End Shift for User
+### End Shift for User
 - Endpoint: POST "/user/{userId}/endShift"
 - Success:
     - Status: 202 ACCEPTED
@@ -46,7 +46,7 @@
     - Status: 409 CONFLICT
     - Body: "Break is in progress"
 
-#### Start Break for User
+### Start Break for User
 - Endpoint: POST "/user/{userId}/startBreak"
 - Optional Parameters:
     - breakType: BreakType \[Break, Lunch] (will default to Break if not defined)
@@ -63,7 +63,7 @@
     - Status: 409 CONFLICT
     - Body: "Break is in progress"
 
-#### End Break for User
+### End Break for User
 - Endpoint: POST "/user/{userId}/endBreak"
 - Success:
     - Status: 202 ACCEPTED
@@ -75,8 +75,8 @@
     - Status: 409 CONFLICT
     - Body: "Break has not started"
 
-#### ADMIN ONLY - Find User Activity
-- Endpoint: POST "/admin/{adminUserId}/userActivity"
+### ADMIN ONLY - Find User Activity
+- Endpoint: GET "/admin/{adminUserId}/userActivity"
 - Optional Parameters (that filter User results):
     - userIdToView: String (only filters when specified, exact match ignoring case)
     - priorWorkShiftsThreshold: int (defaults to 0)
@@ -84,7 +84,7 @@
     - isCurrentlyOnBreak: boolean (only filters when specified as "true")
     - isCurrentlyOnLunch: boolean (only filters when specified as "true")
     - roleToView: Role \[Administrator, NonAdministrator] (only filters when specified)
-- Additional Optional Parameters (that filter which shift/break results to return for users)
+- Additional Optional Parameters (that filter which shift/break results to return for Users)
     - shiftBeginsBefore: LocalDateTime (format: yyyy-MM-dd HH:mm)
     - shiftBeginsAfter: LocalDateTime (format: yyyy-MM-dd HH:mm)
     - breakBeginsBefore: LocalDateTime (format: yyyy-MM-dd HH:mm)

@@ -114,35 +114,6 @@ public class UserServiceTests
 	
 	//endregion
 	
-	//region findUser
-	
-	@ParameterizedTest
-	@ValueSource(strings = {USER_ID, "123456789"})
-	public void findUser_CallsUserRepository(String userId) throws UserNotFoundException
-	{
-		userService.findUser(userId);
-		
-		verify(userRepository).find(userId);
-	}
-	
-	@Test
-	public void findUser_When_UserRepositoryReturnsUser_Then_ReturnsSameUser() throws UserNotFoundException
-	{
-		User actual = userService.findUser(USER_ID);
-		
-		assertEquals(user, actual);
-	}
-	
-	@Test
-	public void findUser_When_UserRepositoryThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
-	{
-		when(userRepository.find(anyString())).thenThrow(new UserNotFoundException());
-		
-		assertThrows(UserNotFoundException.class, () -> userService.findUser(USER_ID));
-	}
-	
-	//endregion
-	
 	//region findUserActivity
 	
 	@ParameterizedTest

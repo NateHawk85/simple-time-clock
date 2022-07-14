@@ -35,34 +35,6 @@ public class UserService
 		return userRepository.create(user);
 	}
 	
-	public User findUser(String userId) throws UserNotFoundException
-	{
-		return userRepository.find(userId);
-	}
-	
-	public Map<String, User> findUserActivity(String adminUserId, ReportDataFilters filters) throws AccessDeniedException, UserNotFoundException
-	{
-		User adminUser = userRepository.find(adminUserId);
-		
-		if (adminUser.getRole() != Role.Administrator)
-		{
-			throw new AccessDeniedException();
-		}
-		
-		Map<String, User> filteredUsers = userRepository.findAllUsers().entrySet().stream()
-				.filter(passesUserIdFilter(filters))
-				.filter(passesRoleFilter(filters))
-				.filter(passesPriorWorkShiftFilter(filters))
-				.filter(passesPriorBreaksFilter(filters))
-				.filter(passesOnBreakFilter(filters))
-				.filter(passesOnLunchFilter(filters))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-		
-		filterShiftsAndBreaksForUsers(filters, filteredUsers);
-		
-		return filteredUsers;
-	}
-	
 	public User updateUser(String userId, String name, Role role) throws UserNotFoundException
 	{
 		User user = userRepository.find(userId);
@@ -148,6 +120,29 @@ public class UserService
 		}
 		
 		userRepository.update(user);
+	}
+	
+	public Map<String, User> findUserActivity(String adminUserId, ReportDataFilters filters) throws AccessDeniedException, UserNotFoundException
+	{
+		User adminUser = userRepository.find(adminUserId);
+		
+		if (adminUser.getRole() != Role.Administrator)
+		{
+			throw new AccessDeniedException();
+		}
+		
+		Map<String, User> filteredUsers = userRepository.findAllUsers().entrySet().stream()
+				.filter(passesUserIdFilter(filters))
+				.filter(passesRoleFilter(filters))
+				.filter(passesPriorWorkShiftFilter(filters))
+				.filter(passesPriorBreaksFilter(filters))
+				.filter(passesOnBreakFilter(filters))
+				.filter(passesOnLunchFilter(filters))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		
+		filterShiftsAndBreaksForUsers(filters, filteredUsers);
+		
+		return filteredUsers;
 	}
 	
 	private void validateUserIsWorking(User user) throws WorkShiftNotStartedException
