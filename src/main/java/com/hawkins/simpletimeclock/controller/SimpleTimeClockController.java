@@ -7,16 +7,20 @@ import com.hawkins.simpletimeclock.enums.Role;
 import com.hawkins.simpletimeclock.exception.*;
 import com.hawkins.simpletimeclock.service.ContextURIService;
 import com.hawkins.simpletimeclock.service.UserService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
 public class SimpleTimeClockController
 {
+	private static final String INPUT_DATE_FORMAT = "yyyy-MM-dd HH:mm";
+	
 	private final UserService userService;
 	private final ContextURIService contextURIService;
 	
@@ -43,11 +47,20 @@ public class SimpleTimeClockController
 															  @RequestParam(required = false, defaultValue = "0") int priorBreaksThreshold,
 															  @RequestParam(required = false, defaultValue = "false") boolean isCurrentlyOnBreak,
 															  @RequestParam(required = false, defaultValue = "false") boolean isCurrentlyOnLunch,
+															  @RequestParam(required = false)
+															  @DateTimeFormat(pattern = INPUT_DATE_FORMAT) LocalDateTime shiftBeginsBefore,
+															  @RequestParam(required = false)
+															  @DateTimeFormat(pattern = INPUT_DATE_FORMAT) LocalDateTime shiftBeginsAfter,
+															  @RequestParam(required = false)
+															  @DateTimeFormat(pattern = INPUT_DATE_FORMAT) LocalDateTime breakBeginsBefore,
+															  @RequestParam(required = false)
+															  @DateTimeFormat(pattern = INPUT_DATE_FORMAT) LocalDateTime breakBeginsAfter,
 															  @RequestParam(required = false) Role roleToView)
 			throws AccessDeniedException, UserNotFoundException
 	{
-		ReportDataFilters filters = new ReportDataFilters(userIdToView, priorWorkShiftsThreshold, priorBreaksThreshold, isCurrentlyOnBreak,
-														  isCurrentlyOnLunch, roleToView);
+		ReportDataFilters filters = new ReportDataFilters(userIdToView, priorWorkShiftsThreshold, priorBreaksThreshold, isCurrentlyOnBreak, isCurrentlyOnLunch,
+														  roleToView, shiftBeginsBefore, shiftBeginsAfter, breakBeginsBefore, breakBeginsAfter);
+		
 		return ResponseEntity.ok(userService.findUserActivity(adminUserId, filters));
 	}
 	

@@ -44,7 +44,7 @@ public class SimpleDatabaseRepository
 	{
 		try
 		{
-			return objectMapper.readValue(DATABASE_FILE, new TypeReference<>() {});
+			return objectMapper.readValue(DATABASE_FILE, new TypeReference<Map<String, User>>() {});
 		} catch (IOException ignored)
 		{
 			throw new RuntimeException("Issue communicating with database.");

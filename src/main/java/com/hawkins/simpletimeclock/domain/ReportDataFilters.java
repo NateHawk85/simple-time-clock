@@ -3,6 +3,7 @@ package com.hawkins.simpletimeclock.domain;
 import com.hawkins.simpletimeclock.enums.Role;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 public class ReportDataFilters implements Serializable
 {
@@ -12,6 +13,10 @@ public class ReportDataFilters implements Serializable
 	private boolean isCurrentlyOnBreak;
 	private boolean isCurrentlyOnLunch;
 	private Role roleToView;
+	private LocalDateTime shiftBeginsBefore;
+	private LocalDateTime shiftBeginsAfter;
+	private LocalDateTime breakBeginsBefore;
+	private LocalDateTime breakBeginsAfter;
 	
 	// Required for Jackson
 	public ReportDataFilters()
@@ -19,7 +24,8 @@ public class ReportDataFilters implements Serializable
 	}
 	
 	public ReportDataFilters(String userIdToView, int priorWorkShiftsThreshold, int priorBreaksThreshold, boolean isCurrentlyOnBreak,
-							 boolean isCurrentlyOnLunch, Role roleToView)
+							 boolean isCurrentlyOnLunch, Role roleToView, LocalDateTime shiftBeginsBefore, LocalDateTime shiftBeginsAfter,
+							 LocalDateTime breakBeginsBefore, LocalDateTime breakBeginsAfter)
 	{
 		this.userIdToView = userIdToView;
 		this.priorWorkShiftsThreshold = priorWorkShiftsThreshold;
@@ -27,6 +33,10 @@ public class ReportDataFilters implements Serializable
 		this.isCurrentlyOnBreak = isCurrentlyOnBreak;
 		this.isCurrentlyOnLunch = isCurrentlyOnLunch;
 		this.roleToView = roleToView;
+		this.shiftBeginsBefore = shiftBeginsBefore;
+		this.shiftBeginsAfter = shiftBeginsAfter;
+		this.breakBeginsBefore = breakBeginsBefore;
+		this.breakBeginsAfter = breakBeginsAfter;
 	}
 	
 	public String getUserIdToView()
@@ -87,5 +97,45 @@ public class ReportDataFilters implements Serializable
 	public void setRoleToView(Role roleToView)
 	{
 		this.roleToView = roleToView;
+	}
+	
+	public LocalDateTime getShiftBeginsBefore()
+	{
+		return shiftBeginsBefore;
+	}
+	
+	public void setShiftBeginsBefore(LocalDateTime shiftBeginsBefore)
+	{
+		this.shiftBeginsBefore = shiftBeginsBefore;
+	}
+	
+	public LocalDateTime getShiftBeginsAfter()
+	{
+		return shiftBeginsAfter;
+	}
+	
+	public void setShiftBeginsAfter(LocalDateTime shiftBeginsAfter)
+	{
+		this.shiftBeginsAfter = shiftBeginsAfter;
+	}
+	
+	public LocalDateTime getBreakBeginsBefore()
+	{
+		return breakBeginsBefore;
+	}
+	
+	public void setBreakBeginsBefore(LocalDateTime breakBeginsBefore)
+	{
+		this.breakBeginsBefore = breakBeginsBefore;
+	}
+	
+	public LocalDateTime getBreakBeginsAfter()
+	{
+		return breakBeginsAfter;
+	}
+	
+	public void setBreakBeginsAfter(LocalDateTime breakBeginsAfter)
+	{
+		this.breakBeginsAfter = breakBeginsAfter;
 	}
 }

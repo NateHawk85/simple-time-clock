@@ -10,6 +10,7 @@ import com.hawkins.simpletimeclock.exception.*;
 import com.hawkins.simpletimeclock.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -48,7 +49,7 @@ public class UserService
 			throw new AccessDeniedException();
 		}
 		
-		return userRepository.findAllUsers().entrySet().stream()
+		Map<String, User> filteredUsers = userRepository.findAllUsers().entrySet().stream()
 				.filter(passesUserIdFilter(filters))
 				.filter(passesRoleFilter(filters))
 				.filter(passesPriorWorkShiftFilter(filters))
@@ -56,6 +57,10 @@ public class UserService
 				.filter(passesOnBreakFilter(filters))
 				.filter(passesOnLunchFilter(filters))
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		
+		filterShiftsAndBreaksForUsers(filters, filteredUsers);
+		
+		return filteredUsers;
 	}
 	
 	public User updateUser(String userId, String name, Role role) throws UserNotFoundException
@@ -167,6 +172,25 @@ public class UserService
 		{
 			throw new BreakInProgressException();
 		}
+	}
+	
+	private void filterShiftsAndBreaksForUsers(ReportDataFilters filters, Map<String, User> filteredUsers)
+	{
+		filteredUsers.entrySet().forEach(entry -> {
+			List<WorkShift> filteredShifts = entry.getValue().getPriorWorkShifts().stream()
+					.filter(shift -> filters.getShiftBeginsBefore() == null || shift.getStartTime().isBefore(filters.getShiftBeginsBefore()))
+					.filter(shift -> filters.getShiftBeginsAfter() == null || shift.getStartTime().isAfter(filters.getShiftBeginsAfter()))
+					.collect(Collectors.toList());
+			List<Break> filteredBreaks = entry.getValue().getPriorBreaks().stream()
+					.filter(workBreak -> filters.getBreakBeginsBefore() == null || workBreak.getStartTime().isBefore(filters.getBreakBeginsBefore()))
+					.filter(workBreak -> filters.getBreakBeginsAfter() == null || workBreak.getStartTime().isAfter(filters.getBreakBeginsAfter()))
+					.collect(Collectors.toList());
+			
+			entry.getValue().getPriorWorkShifts().clear();
+			entry.getValue().getPriorWorkShifts().addAll(filteredShifts);
+			entry.getValue().getPriorBreaks().clear();
+			entry.getValue().getPriorBreaks().addAll(filteredBreaks);
+		});
 	}
 	
 	private Predicate<Map.Entry<String, User>> passesUserIdFilter(ReportDataFilters filters)

@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,6 +42,8 @@ public class SimpleTimeClockControllerTests
 	private static final String USER_ID = "987654321";
 	private static final String NAME = "Anna";
 	private static final String CONTEXT_BASE_URI = "http://localhost:8080/simple-time-clock";
+	private static final LocalDateTime BEFORE_TIME = LocalDateTime.of(2021, 12, 31, 12, 30);
+	private static final LocalDateTime AFTER_TIME = LocalDateTime.of(2021, 12, 31, 12, 30);
 	
 	@Captor
 	private ArgumentCaptor<ReportDataFilters> filtersCaptor;
@@ -141,7 +144,7 @@ public class SimpleTimeClockControllerTests
 	@ValueSource(strings = {USER_ID, "123456789"})
 	public void findUserActivity_CallsUserService(String userId) throws AccessDeniedException, UserNotFoundException
 	{
-		controller.findUserActivity(userId, "1234", 2, 3, true, false, Role.Administrator);
+		controller.findUserActivity(userId, "1234", 2, 3, true, false, AFTER_TIME, BEFORE_TIME, AFTER_TIME, BEFORE_TIME, Role.Administrator);
 		
 		verify(userService).findUserActivity(eq(userId), filtersCaptor.capture());
 		ReportDataFilters filters = filtersCaptor.getValue();
@@ -151,12 +154,16 @@ public class SimpleTimeClockControllerTests
 		assertTrue(filters.isCurrentlyOnBreak());
 		assertFalse(filters.isCurrentlyOnLunch());
 		assertEquals(Role.Administrator, filters.getRoleToView());
+		assertEquals(AFTER_TIME, filters.getShiftBeginsBefore());
+		assertEquals(BEFORE_TIME, filters.getShiftBeginsAfter());
+		assertEquals(AFTER_TIME, filters.getBreakBeginsBefore());
+		assertEquals(BEFORE_TIME, filters.getBreakBeginsAfter());
 	}
 	
 	@Test
 	public void findUserActivity_SetsFiltersOnValuesPassedToUserService() throws AccessDeniedException, UserNotFoundException
 	{
-		controller.findUserActivity(USER_ID, "12345", 0, 1, false, true, Role.NonAdministrator);
+		controller.findUserActivity(USER_ID, "12345", 0, 1, false, true, BEFORE_TIME, AFTER_TIME, BEFORE_TIME, AFTER_TIME, Role.NonAdministrator);
 		
 		verify(userService).findUserActivity(eq(USER_ID), filtersCaptor.capture());
 		ReportDataFilters filters = filtersCaptor.getValue();
@@ -166,12 +173,16 @@ public class SimpleTimeClockControllerTests
 		assertFalse(filters.isCurrentlyOnBreak());
 		assertTrue(filters.isCurrentlyOnLunch());
 		assertEquals(Role.NonAdministrator, filters.getRoleToView());
+		assertEquals(BEFORE_TIME, filters.getShiftBeginsBefore());
+		assertEquals(AFTER_TIME, filters.getShiftBeginsAfter());
+		assertEquals(BEFORE_TIME, filters.getBreakBeginsBefore());
+		assertEquals(AFTER_TIME, filters.getBreakBeginsAfter());
 	}
 	
 	@Test
 	public void findUserActivity_SetsFiltersOnNullValuesPassedToUserService() throws AccessDeniedException, UserNotFoundException
 	{
-		controller.findUserActivity(USER_ID, null, 0, 0, false, false, null);
+		controller.findUserActivity(USER_ID, null, 0, 0, false, false, null, null, null, null, null);
 		
 		verify(userService).findUserActivity(eq(USER_ID), filtersCaptor.capture());
 		ReportDataFilters filters = filtersCaptor.getValue();
@@ -181,13 +192,18 @@ public class SimpleTimeClockControllerTests
 		assertFalse(filters.isCurrentlyOnBreak());
 		assertFalse(filters.isCurrentlyOnLunch());
 		assertNull(filters.getRoleToView());
+		assertNull(filters.getShiftBeginsBefore());
+		assertNull(filters.getShiftBeginsAfter());
+		assertNull(filters.getBreakBeginsBefore());
+		assertNull(filters.getBreakBeginsAfter());
 	}
 	
 	@Test
 	public void findUserActivity_When_UserServiceReturnsUser_Then_ReturnsWhatUserServiceReturnsInBody() throws AccessDeniedException, UserNotFoundException
 	{
 		when(userService.findUserActivity(anyString(), any())).thenReturn(users);
-		ResponseEntity<Map<String, User>> actual = controller.findUserActivity(USER_ID, "1234", 2, 3, true, false, Role.Administrator);
+		ResponseEntity<Map<String, User>> actual = controller.findUserActivity(USER_ID, "1234", 2, 3, true, false, BEFORE_TIME, AFTER_TIME, BEFORE_TIME,
+																			   AFTER_TIME, Role.Administrator);
 		
 		assertEquals(users, actual.getBody());
 	}
@@ -197,7 +213,8 @@ public class SimpleTimeClockControllerTests
 	{
 		when(userService.findUserActivity(anyString(), any())).thenThrow(new UserNotFoundException());
 		
-		assertThrows(UserNotFoundException.class, () -> controller.findUserActivity(USER_ID, "1234", 2, 3, true, false, Role.Administrator));
+		assertThrows(UserNotFoundException.class, () -> controller.findUserActivity(USER_ID, "1234", 2, 3, true, false, BEFORE_TIME, AFTER_TIME, BEFORE_TIME,
+																					AFTER_TIME, Role.Administrator));
 	}
 	
 	@Test
@@ -205,7 +222,8 @@ public class SimpleTimeClockControllerTests
 	{
 		when(userService.findUserActivity(anyString(), any())).thenThrow(new AccessDeniedException());
 		
-		assertThrows(AccessDeniedException.class, () -> controller.findUserActivity(USER_ID, "1234", 2, 3, true, false, Role.Administrator));
+		assertThrows(AccessDeniedException.class, () -> controller.findUserActivity(USER_ID, "1234", 2, 3, true, false, BEFORE_TIME, AFTER_TIME,
+																					BEFORE_TIME, AFTER_TIME, Role.Administrator));
 	}
 	
 	//endregion
