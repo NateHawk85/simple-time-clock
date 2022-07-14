@@ -1,6 +1,9 @@
 # Build target
 target
 
+# Users DB
+src/main/resources/users_db.json
+
 ### IntelliJ IDEA ###
 .idea
 *.iml

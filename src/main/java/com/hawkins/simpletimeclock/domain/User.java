@@ -14,6 +14,12 @@ public class User
 	private Break currentBreak;
 	private Break currentLunchBreak;
 	
+	// Required for Jackson
+	public User()
+	{
+		this.userId = null;
+	}
+	
 	public User(@NonNull String userId)
 	{
 		this.userId = userId;
