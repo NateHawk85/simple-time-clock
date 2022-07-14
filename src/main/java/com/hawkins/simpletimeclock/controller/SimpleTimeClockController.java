@@ -1,5 +1,6 @@
 package com.hawkins.simpletimeclock.controller;
 
+import com.hawkins.simpletimeclock.domain.ReportDataFilters;
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.enums.BreakType;
 import com.hawkins.simpletimeclock.enums.Role;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.Map;
 
 @RestController
 public class SimpleTimeClockController
@@ -34,10 +36,19 @@ public class SimpleTimeClockController
 				.body(user);
 	}
 	
-	@GetMapping("/user/{userId}")
-	public ResponseEntity<User> findUser(@PathVariable String userId) throws UserNotFoundException
+	@GetMapping("/admin/{adminUserId}/userActivity")
+	public ResponseEntity<Map<String, User>> findUserActivity(@PathVariable String adminUserId,
+															  @RequestParam(required = false) String userIdToView,
+															  @RequestParam(required = false, defaultValue = "0") int priorWorkShiftsThreshold,
+															  @RequestParam(required = false, defaultValue = "0") int priorBreaksThreshold,
+															  @RequestParam(required = false, defaultValue = "false") boolean isCurrentlyOnBreak,
+															  @RequestParam(required = false, defaultValue = "false") boolean isCurrentlyOnLunch,
+															  @RequestParam(required = false) Role roleToView)
+			throws AccessDeniedException, UserNotFoundException
 	{
-		return ResponseEntity.ok(userService.findUser(userId));
+		ReportDataFilters filters = new ReportDataFilters(userIdToView, priorWorkShiftsThreshold, priorBreaksThreshold, isCurrentlyOnBreak,
+														  isCurrentlyOnLunch, roleToView);
+		return ResponseEntity.ok(userService.findUserActivity(adminUserId, filters));
 	}
 	
 	@PostMapping("/user/{userId}/update")

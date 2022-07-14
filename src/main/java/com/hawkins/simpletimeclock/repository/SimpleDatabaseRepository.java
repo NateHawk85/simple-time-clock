@@ -3,6 +3,7 @@ package com.hawkins.simpletimeclock.repository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hawkins.simpletimeclock.domain.User;
+import com.hawkins.simpletimeclock.enums.Role;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.PostConstruct;
@@ -71,8 +72,14 @@ public class SimpleDatabaseRepository
 		Map<String, User> defaultUsers = new HashMap<>();
 		
 		User anna = new User("123");
+		anna.setName("Anna");
+		anna.setRole(Role.NonAdministrator);
 		User bob = new User("1234");
+		bob.setName("Bob");
+		bob.setRole(Role.Administrator);
 		User charlie = new User("987654321");
+		charlie.setName("Charlie");
+		charlie.setRole(Role.NonAdministrator);
 		
 		defaultUsers.put(anna.getUserId(), anna);
 		defaultUsers.put(bob.getUserId(), bob);

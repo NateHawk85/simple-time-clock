@@ -1,5 +1,6 @@
 package com.hawkins.simpletimeclock.controller;
 
+import com.hawkins.simpletimeclock.domain.ReportDataFilters;
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.enums.BreakType;
 import com.hawkins.simpletimeclock.enums.Role;
@@ -11,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -20,6 +23,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,6 +42,9 @@ public class SimpleTimeClockControllerTests
 	private static final String NAME = "Anna";
 	private static final String CONTEXT_BASE_URI = "http://localhost:8080/simple-time-clock";
 	
+	@Captor
+	private ArgumentCaptor<ReportDataFilters> filtersCaptor;
+	
 	@MockBean
 	private UserService userService;
 	@MockBean
@@ -45,10 +54,14 @@ public class SimpleTimeClockControllerTests
 	@Autowired
 	private SimpleTimeClockController controller;
 	
+	private Map<String, User> users;
+	
 	@BeforeEach
-	public void setUp()
+	public void setUp() throws AccessDeniedException, UserNotFoundException
 	{
+		users = new HashMap<>();
 		when(contextURIService.fullContextPath()).thenReturn(CONTEXT_BASE_URI);
+		lenient().when(userService.findUserActivity(anyString(), any())).thenReturn(users);
 	}
 	
 	@Test
@@ -115,40 +128,84 @@ public class SimpleTimeClockControllerTests
 	
 	//endregion
 	
-	//region findUser
+	//region findUserActivity
 	
 	@Test
-	public void findUser_EndpointExists() throws Exception
+	public void findUserActivity_EndpointExists() throws Exception
 	{
-		mockMvc.perform(get("/user/987654321"))
+		mockMvc.perform(get("/admin/987654321/userActivity"))
 				.andExpect(status().isOk());
 	}
 	
 	@ParameterizedTest
 	@ValueSource(strings = {USER_ID, "123456789"})
-	public void findUser_CallsUserService(String userId) throws UserNotFoundException
+	public void findUserActivity_CallsUserService(String userId) throws AccessDeniedException, UserNotFoundException
 	{
-		controller.findUser(userId);
+		controller.findUserActivity(userId, "1234", 2, 3, true, false, Role.Administrator);
 		
-		verify(userService).findUser(userId);
+		verify(userService).findUserActivity(eq(userId), filtersCaptor.capture());
+		ReportDataFilters filters = filtersCaptor.getValue();
+		assertEquals("1234", filters.getUserIdToView());
+		assertEquals(2, filters.getPriorWorkShiftsThreshold());
+		assertEquals(3, filters.getPriorBreaksThreshold());
+		assertTrue(filters.isCurrentlyOnBreak());
+		assertFalse(filters.isCurrentlyOnLunch());
+		assertEquals(Role.Administrator, filters.getRoleToView());
 	}
 	
 	@Test
-	public void findUser_When_UserServiceReturnsUser_Then_ReturnsWhatUserServiceReturnsInBody() throws UserNotFoundException
+	public void findUserActivity_SetsFiltersOnValuesPassedToUserService() throws AccessDeniedException, UserNotFoundException
 	{
-		User expectedUser = new User();
-		when(userService.findUser(anyString())).thenReturn(expectedUser);
-		ResponseEntity<User> actual = controller.findUser(USER_ID);
+		controller.findUserActivity(USER_ID, "12345", 0, 1, false, true, Role.NonAdministrator);
 		
-		assertEquals(expectedUser, actual.getBody());
+		verify(userService).findUserActivity(eq(USER_ID), filtersCaptor.capture());
+		ReportDataFilters filters = filtersCaptor.getValue();
+		assertEquals("12345", filters.getUserIdToView());
+		assertEquals(0, filters.getPriorWorkShiftsThreshold());
+		assertEquals(1, filters.getPriorBreaksThreshold());
+		assertFalse(filters.isCurrentlyOnBreak());
+		assertTrue(filters.isCurrentlyOnLunch());
+		assertEquals(Role.NonAdministrator, filters.getRoleToView());
 	}
 	
 	@Test
-	public void findUser_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
+	public void findUserActivity_SetsFiltersOnNullValuesPassedToUserService() throws AccessDeniedException, UserNotFoundException
 	{
-		when(userService.findUser(anyString())).thenThrow(new UserNotFoundException());
+		controller.findUserActivity(USER_ID, null, 0, 0, false, false, null);
 		
-		assertThrows(UserNotFoundException.class, () -> controller.findUser(USER_ID));
+		verify(userService).findUserActivity(eq(USER_ID), filtersCaptor.capture());
+		ReportDataFilters filters = filtersCaptor.getValue();
+		assertNull(filters.getUserIdToView());
+		assertEquals(0, filters.getPriorWorkShiftsThreshold());
+		assertEquals(0, filters.getPriorBreaksThreshold());
+		assertFalse(filters.isCurrentlyOnBreak());
+		assertFalse(filters.isCurrentlyOnLunch());
+		assertNull(filters.getRoleToView());
+	}
+	
+	@Test
+	public void findUserActivity_When_UserServiceReturnsUser_Then_ReturnsWhatUserServiceReturnsInBody() throws AccessDeniedException, UserNotFoundException
+	{
+		when(userService.findUserActivity(anyString(), any())).thenReturn(users);
+		ResponseEntity<Map<String, User>> actual = controller.findUserActivity(USER_ID, "1234", 2, 3, true, false, Role.Administrator);
+		
+		assertEquals(users, actual.getBody());
+	}
+	
+	@Test
+	public void findUserActivity_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException() throws AccessDeniedException, UserNotFoundException
+	{
+		when(userService.findUserActivity(anyString(), any())).thenThrow(new UserNotFoundException());
+		
+		assertThrows(UserNotFoundException.class, () -> controller.findUserActivity(USER_ID, "1234", 2, 3, true, false, Role.Administrator));
+	}
+	
+	@Test
+	public void findUserActivity_When_UserServiceThrowsAccessDeniedException_Then_ThrowsSameException() throws AccessDeniedException, UserNotFoundException
+	{
+		when(userService.findUserActivity(anyString(), any())).thenThrow(new AccessDeniedException());
+		
+		assertThrows(AccessDeniedException.class, () -> controller.findUserActivity(USER_ID, "1234", 2, 3, true, false, Role.Administrator));
 	}
 	
 	//endregion

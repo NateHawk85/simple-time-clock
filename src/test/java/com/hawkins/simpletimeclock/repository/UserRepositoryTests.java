@@ -152,6 +152,16 @@ public class UserRepositoryTests
 	
 	//endregion
 	
+	//region findAllUsers
+	
+	@Test
+	public void findAllUsers_When__Then_ReturnsWhatSimpleDatabaseRepositoryReturns()
+	{
+		assertEquals(users, userRepository.findAllUsers());
+	}
+	
+	//endregion
+	
 	//region update
 	
 	@Test

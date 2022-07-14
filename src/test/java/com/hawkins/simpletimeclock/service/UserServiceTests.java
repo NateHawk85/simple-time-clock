@@ -1,6 +1,7 @@
 package com.hawkins.simpletimeclock.service;
 
 import com.hawkins.simpletimeclock.domain.Break;
+import com.hawkins.simpletimeclock.domain.ReportDataFilters;
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.domain.WorkShift;
 import com.hawkins.simpletimeclock.enums.BreakType;
@@ -20,8 +21,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -44,13 +48,20 @@ public class UserServiceTests
 	private UserService userService;
 	
 	private User user;
+	private ReportDataFilters filters;
+	private Map<String, User> users;
 	
 	@BeforeEach
 	public void setUp() throws UserNotFoundException, UserAlreadyExistsException
 	{
 		user = new User(USER_ID);
+		user.setRole(Role.Administrator);
+		users = new HashMap<>();
+		users.put(USER_ID, user);
+		filters = new ReportDataFilters();
 		lenient().when(userRepository.create(any())).thenReturn(user);
 		lenient().when(userRepository.find(anyString())).thenReturn(user);
+		lenient().when(userRepository.findAllUsers()).thenReturn(users);
 		lenient().when(userRepository.update(any())).thenReturn(user);
 		lenient().when(clock.now()).thenReturn(START_TIME);
 	}
@@ -128,6 +139,178 @@ public class UserServiceTests
 		when(userRepository.find(anyString())).thenThrow(new UserNotFoundException());
 		
 		assertThrows(UserNotFoundException.class, () -> userService.findUser(USER_ID));
+	}
+	
+	//endregion
+	
+	//region findUserActivity
+	
+	@ParameterizedTest
+	@ValueSource(strings = {USER_ID, "987654321"})
+	public void findUserActivity_CallsUserRepositoryFind(String userId) throws AccessDeniedException, UserNotFoundException
+	{
+		userService.findUserActivity(userId, filters);
+		
+		verify(userRepository).find(userId);
+	}
+	
+	@Test
+	public void findUserActivity_When_UserRepositoryFindThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
+	{
+		when(userRepository.find(anyString())).thenThrow(new UserNotFoundException());
+		
+		assertThrows(UserNotFoundException.class, () -> userService.findUserActivity(USER_ID, filters));
+	}
+	
+	@Test
+	public void findUserActivity_When_UserIsNotAdministrator_Then_ThrowsAccessDeniedException()
+	{
+		user.setRole(null);
+		
+		assertThrows(AccessDeniedException.class, () -> userService.findUserActivity(USER_ID, filters));
+		
+		user.setRole(Role.NonAdministrator);
+		
+		assertThrows(AccessDeniedException.class, () -> userService.findUserActivity(USER_ID, filters));
+	}
+	
+	@Test
+	public void findUserActivity_When_UserIsAdministrator_Then_ReturnsWhatUserRepositoryReturns() throws AccessDeniedException, UserNotFoundException
+	{
+		Map<String, User> actual = userService.findUserActivity(USER_ID, filters);
+		
+		assertEquals(users, actual);
+	}
+	
+	@Test
+	public void findUserActivity_When_UserIsAdministratorAndUserIdFilterExists_Then_OnlyShowsUsersWithGivenUserId()
+			throws UserNotFoundException, AccessDeniedException
+	{
+		filters.setUserIdToView(USER_ID);
+		users.put("111", new User("111"));
+		users.put("222", new User("222"));
+		users.put("333", new User("333"));
+		
+		Map<String, User> actual = userService.findUserActivity(USER_ID, filters);
+		
+		assertEquals(singletonMap(USER_ID, user), actual);
+	}
+	
+	@Test
+	public void findUserActivity_When_UserIsAdministratorAndPriorWorkShiftsThresholdExists_Then_OnlyShowsUsersWithNumberOfThresholdsOrGreater()
+			throws UserNotFoundException, AccessDeniedException
+	{
+		filters.setPriorWorkShiftsThreshold(1);
+		users.put("111", new User("111"));
+		users.put("222", new User("222"));
+		users.put("333", new User("333"));
+		User oneShift = new User("444");
+		oneShift.getPriorWorkShifts().add(new WorkShift(LocalDateTime.now()));
+		users.put("444", oneShift);
+		User twoShifts = new User("555");
+		twoShifts.getPriorWorkShifts().add(new WorkShift(LocalDateTime.now()));
+		users.put("555", twoShifts);
+		
+		Map<String, User> actual = userService.findUserActivity(USER_ID, filters);
+		
+		Map<String, User> expected = new HashMap<>();
+		expected.put("444", oneShift);
+		expected.put("555", twoShifts);
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void findUserActivity_When_UserIsAdministratorAndPriorBreaksThresholdExists_Then_OnlyShowsUsersWithNumberOfThresholdsOrGreater()
+			throws UserNotFoundException, AccessDeniedException
+	{
+		filters.setPriorBreaksThreshold(1);
+		users.put("111", new User("111"));
+		users.put("222", new User("222"));
+		users.put("333", new User("333"));
+		User oneShift = new User("444");
+		oneShift.getPriorBreaks().add(new Break(BreakType.Break, LocalDateTime.now()));
+		users.put("444", oneShift);
+		User twoShifts = new User("555");
+		twoShifts.getPriorBreaks().add(new Break(BreakType.Break, LocalDateTime.now()));
+		users.put("555", twoShifts);
+		
+		Map<String, User> actual = userService.findUserActivity(USER_ID, filters);
+		
+		Map<String, User> expected = new HashMap<>();
+		expected.put("444", oneShift);
+		expected.put("555", twoShifts);
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void findUserActivity_When_UserIsAdministratorAndIsCurrentlyOnBreakFilterExists_Then_OnlyShowsUsersCurrentlyOnBreak()
+			throws UserNotFoundException, AccessDeniedException
+	{
+		filters.setCurrentlyOnBreak(true);
+		users.put("111", new User("111"));
+		User onBreak1 = new User("222");
+		onBreak1.setCurrentBreak(new Break(BreakType.Break, LocalDateTime.now()));
+		users.put("222", onBreak1);
+		users.put("333", new User("333"));
+		User onBreak2 = new User("444");
+		onBreak2.setCurrentBreak(new Break(BreakType.Break, LocalDateTime.now()));
+		users.put("444", onBreak2);
+		users.put("555", new User("555"));
+		
+		Map<String, User> actual = userService.findUserActivity(USER_ID, filters);
+		
+		Map<String, User> expected = new HashMap<>();
+		expected.put("222", onBreak1);
+		expected.put("444", onBreak2);
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void findUserActivity_When_UserIsAdministratorAndIsCurrentlyOnLunchBreakFilterExists_Then_OnlyShowsUsersCurrentlyOnLunchBreak()
+			throws UserNotFoundException, AccessDeniedException
+	{
+		filters.setCurrentlyOnLunch(true);
+		users.put("111", new User("111"));
+		User onBreak1 = new User("222");
+		onBreak1.setCurrentLunchBreak(new Break(BreakType.Lunch, LocalDateTime.now()));
+		users.put("222", onBreak1);
+		users.put("333", new User("333"));
+		User onBreak2 = new User("444");
+		onBreak2.setCurrentLunchBreak(new Break(BreakType.Lunch, LocalDateTime.now()));
+		users.put("444", onBreak2);
+		users.put("555", new User("555"));
+		
+		Map<String, User> actual = userService.findUserActivity(USER_ID, filters);
+		
+		Map<String, User> expected = new HashMap<>();
+		expected.put("222", onBreak1);
+		expected.put("444", onBreak2);
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void findUserActivity_When_UserIsAdministratorAndRoleFilterExists_Then_OnlyShowsUsersWithGivenRole()
+			throws UserNotFoundException, AccessDeniedException
+	{
+		filters.setRoleToView(Role.NonAdministrator);
+		users.put("111", new User("111"));
+		User administrator = new User("222");
+		administrator.setRole(Role.Administrator);
+		users.put("222", administrator);
+		users.put("333", new User("333"));
+		User nonAdministrator1 = new User("444");
+		nonAdministrator1.setRole(Role.NonAdministrator);
+		users.put("444", nonAdministrator1);
+		User nonAdministrator2 = new User("555");
+		nonAdministrator2.setRole(Role.NonAdministrator);
+		users.put("555", nonAdministrator2);
+		
+		Map<String, User> actual = userService.findUserActivity(USER_ID, filters);
+		
+		Map<String, User> expected = new HashMap<>();
+		expected.put("444", nonAdministrator1);
+		expected.put("555", nonAdministrator2);
+		assertEquals(expected, actual);
 	}
 	
 	//endregion

@@ -46,6 +46,11 @@ public class UserRepository
 		return user;
 	}
 	
+	public Map<String, User> findAllUsers()
+	{
+		return simpleDatabaseRepository.read();
+	}
+	
 	public User update(@NonNull User user) throws UserNotFoundException
 	{
 		Map<String, User> users = simpleDatabaseRepository.read();

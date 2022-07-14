@@ -1,6 +1,7 @@
 package com.hawkins.simpletimeclock.service;
 
 import com.hawkins.simpletimeclock.domain.Break;
+import com.hawkins.simpletimeclock.domain.ReportDataFilters;
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.domain.WorkShift;
 import com.hawkins.simpletimeclock.enums.BreakType;
@@ -8,6 +9,10 @@ import com.hawkins.simpletimeclock.enums.Role;
 import com.hawkins.simpletimeclock.exception.*;
 import com.hawkins.simpletimeclock.repository.UserRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService
@@ -32,6 +37,25 @@ public class UserService
 	public User findUser(String userId) throws UserNotFoundException
 	{
 		return userRepository.find(userId);
+	}
+	
+	public Map<String, User> findUserActivity(String adminUserId, ReportDataFilters filters) throws AccessDeniedException, UserNotFoundException
+	{
+		User adminUser = userRepository.find(adminUserId);
+		
+		if (adminUser.getRole() != Role.Administrator)
+		{
+			throw new AccessDeniedException();
+		}
+		
+		return userRepository.findAllUsers().entrySet().stream()
+				.filter(passesUserIdFilter(filters))
+				.filter(passesRoleFilter(filters))
+				.filter(passesPriorWorkShiftFilter(filters))
+				.filter(passesPriorBreaksFilter(filters))
+				.filter(passesOnBreakFilter(filters))
+				.filter(passesOnLunchFilter(filters))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 	
 	public User updateUser(String userId, String name, Role role) throws UserNotFoundException
@@ -143,5 +167,35 @@ public class UserService
 		{
 			throw new BreakInProgressException();
 		}
+	}
+	
+	private Predicate<Map.Entry<String, User>> passesUserIdFilter(ReportDataFilters filters)
+	{
+		return entry -> filters.getUserIdToView() == null || filters.getUserIdToView().equals(entry.getValue().getUserId());
+	}
+	
+	private Predicate<Map.Entry<String, User>> passesRoleFilter(ReportDataFilters filters)
+	{
+		return entry -> filters.getRoleToView() == null || filters.getRoleToView().equals(entry.getValue().getRole());
+	}
+	
+	private Predicate<Map.Entry<String, User>> passesPriorWorkShiftFilter(ReportDataFilters filters)
+	{
+		return entry -> entry.getValue().getPriorWorkShifts().size() >= filters.getPriorWorkShiftsThreshold();
+	}
+	
+	private Predicate<Map.Entry<String, User>> passesPriorBreaksFilter(ReportDataFilters filters)
+	{
+		return entry -> entry.getValue().getPriorBreaks().size() >= filters.getPriorBreaksThreshold();
+	}
+	
+	private Predicate<Map.Entry<String, User>> passesOnBreakFilter(ReportDataFilters filters)
+	{
+		return entry -> !filters.isCurrentlyOnBreak() || entry.getValue().getCurrentBreak() != null;
+	}
+	
+	private Predicate<Map.Entry<String, User>> passesOnLunchFilter(ReportDataFilters filters)
+	{
+		return entry -> !filters.isCurrentlyOnLunch() || entry.getValue().getCurrentLunchBreak() != null;
 	}
 }

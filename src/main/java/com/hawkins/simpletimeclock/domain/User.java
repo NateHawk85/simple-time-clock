@@ -3,10 +3,11 @@ package com.hawkins.simpletimeclock.domain;
 import com.hawkins.simpletimeclock.enums.Role;
 import org.springframework.lang.NonNull;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class User
+public class User implements Serializable
 {
 	private final String userId;
 	private final List<WorkShift> priorWorkShifts = new ArrayList<>();

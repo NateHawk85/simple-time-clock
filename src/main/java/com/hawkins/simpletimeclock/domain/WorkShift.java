@@ -2,12 +2,19 @@ package com.hawkins.simpletimeclock.domain;
 
 import org.springframework.lang.NonNull;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public class WorkShift
+public class WorkShift implements Serializable
 {
 	private final LocalDateTime startTime;
 	private LocalDateTime endTime;
+	
+	// Required for Jackson
+	public WorkShift()
+	{
+		startTime = null;
+	}
 	
 	public WorkShift(@NonNull LocalDateTime startTime)
 	{

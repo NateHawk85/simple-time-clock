@@ -7,15 +7,15 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class BreakInProgressExceptionTests
+public class AccessDeniedExceptionTests
 {
 	@Test
 	public void class_HasCorrectAnnotations()
 	{
-		ResponseStatus annotation = BreakInProgressException.class.getAnnotation(ResponseStatus.class);
+		ResponseStatus annotation = AccessDeniedException.class.getAnnotation(ResponseStatus.class);
 		
 		assertNotNull(annotation);
-		assertEquals(HttpStatus.CONFLICT, annotation.value());
-		assertEquals("Break is in progress", annotation.reason());
+		assertEquals(HttpStatus.FORBIDDEN, annotation.value());
+		assertEquals("Only Administrators may view report data", annotation.reason());
 	}
 }
