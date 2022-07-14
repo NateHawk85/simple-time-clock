@@ -1,0 +1,233 @@
+{
+	"info": {
+		"_postman_id": "4c1930ca-8340-4469-b076-a6cf3f643cb2",
+		"name": "Simple Time Clock - Nathan Hawkins",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create User",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/simple-time-clock/user/12345",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"simple-time-clock",
+						"user",
+						"12345"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update User",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/simple-time-clock/user/1234/update",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"simple-time-clock",
+						"user",
+						"1234",
+						"update"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "Dalton",
+							"disabled": true
+						},
+						{
+							"key": "role",
+							"value": "Administrator",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Start Shift",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/simple-time-clock/user/1234/startShift",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"simple-time-clock",
+						"user",
+						"1234",
+						"startShift"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "End Shift",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/simple-time-clock/user/1234/endShift",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"simple-time-clock",
+						"user",
+						"1234",
+						"endShift"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Start Break",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/simple-time-clock/user/1234/startBreak",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"simple-time-clock",
+						"user",
+						"1234",
+						"startBreak"
+					],
+					"query": [
+						{
+							"key": "breakType",
+							"value": "Lunch",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "End Break",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/simple-time-clock/user/1234/endBreak",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"simple-time-clock",
+						"user",
+						"1234",
+						"endBreak"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Admin - Find User Activity",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/simple-time-clock/admin/1234/userActivity",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"simple-time-clock",
+						"admin",
+						"1234",
+						"userActivity"
+					],
+					"query": [
+						{
+							"key": "userIdToView",
+							"value": "987654321",
+							"disabled": true
+						},
+						{
+							"key": "priorWorkShiftsThreshold",
+							"value": "1",
+							"disabled": true
+						},
+						{
+							"key": "priorBreaksThreshold",
+							"value": "1",
+							"disabled": true
+						},
+						{
+							"key": "isCurrentlyOnBreak",
+							"value": "false",
+							"disabled": true
+						},
+						{
+							"key": "isCurrentlyOnLunch",
+							"value": "false",
+							"disabled": true
+						},
+						{
+							"key": "roleToView",
+							"value": "NonAdministrator",
+							"disabled": true
+						},
+						{
+							"key": "shiftBeginsBefore",
+							"value": "2022-07-14 01:15",
+							"disabled": true
+						},
+						{
+							"key": "shiftBeginsAfter",
+							"value": "2022-07-15 01:15",
+							"disabled": true
+						},
+						{
+							"key": "breakBeginsBefore",
+							"value": "2022-07-14 01:35",
+							"disabled": true
+						},
+						{
+							"key": "breakBeginsAfter",
+							"value": "2022-07-14 01:35",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
