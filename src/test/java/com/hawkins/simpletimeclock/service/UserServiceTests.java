@@ -4,6 +4,7 @@ import com.hawkins.simpletimeclock.domain.Break;
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.domain.WorkShift;
 import com.hawkins.simpletimeclock.enums.BreakType;
+import com.hawkins.simpletimeclock.enums.Role;
 import com.hawkins.simpletimeclock.exception.*;
 import com.hawkins.simpletimeclock.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.*;
 public class UserServiceTests
 {
 	private static final String USER_ID = "987654321";
+	private static final String NAME = "Anna";
 	private static final LocalDateTime START_TIME = LocalDateTime.of(2022, 12, 31, 12, 30);
 	private static final LocalDateTime END_TIME = LocalDateTime.of(2022, 12, 31, 20, 29);
 	
@@ -49,6 +51,7 @@ public class UserServiceTests
 		user = new User(USER_ID);
 		lenient().when(userRepository.create(any())).thenReturn(user);
 		lenient().when(userRepository.find(anyString())).thenReturn(user);
+		lenient().when(userRepository.update(any())).thenReturn(user);
 		lenient().when(clock.now()).thenReturn(START_TIME);
 	}
 	
@@ -68,6 +71,18 @@ public class UserServiceTests
 		
 		verify(userRepository).create(userCaptor.capture());
 		assertEquals(userId, userCaptor.getValue().getUserId());
+	}
+	
+	@Test
+	public void createUser_When_UserExists_Then_SetsUserRoleToNonAdministrator() throws UserAlreadyExistsException
+	{
+		user.setRole(Role.Administrator);
+		
+		userService.createUser(USER_ID);
+		
+		verify(userRepository).create(userCaptor.capture());
+		
+		assertEquals(Role.NonAdministrator, userCaptor.getValue().getRole());
 	}
 	
 	@Test
@@ -113,6 +128,111 @@ public class UserServiceTests
 		when(userRepository.find(anyString())).thenThrow(new UserNotFoundException());
 		
 		assertThrows(UserNotFoundException.class, () -> userService.findUser(USER_ID));
+	}
+	
+	//endregion
+	
+	//region updateUser
+	
+	@ParameterizedTest
+	@ValueSource(strings = {USER_ID, "987654321"})
+	public void updateUser_CallsUserRepository(String userId) throws UserNotFoundException
+	{
+		userService.updateUser(userId, NAME, Role.Administrator);
+		
+		verify(userRepository).find(userId);
+	}
+	
+	@Test
+	public void updateUser_When_UserRepositoryThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
+	{
+		when(userRepository.find(anyString())).thenThrow(new UserNotFoundException());
+		
+		assertThrows(UserNotFoundException.class, () -> userService.updateUser(USER_ID, NAME, Role.Administrator));
+	}
+	
+	@Test
+	public void updateUser_When_UserExists_Then_UpdatesNonNullFieldsOnUser() throws UserNotFoundException
+	{
+		user.setName("Some name");
+		user.setRole(Role.NonAdministrator);
+		
+		userService.updateUser(USER_ID, NAME, Role.Administrator);
+		
+		assertEquals(NAME, user.getName());
+		assertEquals(Role.Administrator, user.getRole());
+	}
+	
+	@Test
+	public void updateUser_When_UserExistsAndNameIsNull_Then_DoesNotOverrideName() throws UserNotFoundException
+	{
+		user.setName(NAME);
+		user.setRole(Role.NonAdministrator);
+		
+		userService.updateUser(USER_ID, null, Role.Administrator);
+		
+		assertEquals(NAME, user.getName());
+		assertEquals(Role.Administrator, user.getRole());
+	}
+	
+	@Test
+	public void updateUser_When_UserExistsAndRoleIsNull_Then_DoesNotOverrideRole() throws UserNotFoundException
+	{
+		user.setName(NAME);
+		user.setRole(Role.NonAdministrator);
+		
+		userService.updateUser(USER_ID, "Bob", null);
+		
+		assertEquals("Bob", user.getName());
+		assertEquals(Role.NonAdministrator, user.getRole());
+	}
+	
+	@Test
+	public void updateUser_When_UserExistsAndFieldsAreNull_Then_DoesNotOverrideFields() throws UserNotFoundException
+	{
+		user.setName(NAME);
+		user.setRole(Role.NonAdministrator);
+		
+		userService.updateUser(USER_ID, null, null);
+		
+		assertEquals(NAME, user.getName());
+		assertEquals(Role.NonAdministrator, user.getRole());
+	}
+	
+	@Test
+	public void updateUser_When_UserExists_Then_UpdatesFieldsOnUser_AltParams() throws UserNotFoundException
+	{
+		user.setName("Some name");
+		user.setRole(Role.NonAdministrator);
+		
+		userService.updateUser(USER_ID, "Bob", Role.NonAdministrator);
+		
+		assertEquals("Bob", user.getName());
+		assertEquals(Role.NonAdministrator, user.getRole());
+	}
+	
+	@Test
+	public void updateUser_When_UserExists_Then_CallsUserRepositoryToUpdate() throws UserNotFoundException
+	{
+		userService.updateUser(USER_ID, NAME, Role.Administrator);
+		
+		verify(userRepository).update(user);
+	}
+	
+	@Test
+	public void updateUser_When_UserRepositoryUpdateThrowsUserNotFoundException_Then_ThrowsSameExcetpion() throws UserNotFoundException
+	{
+		when(userRepository.update(any())).thenThrow(new UserNotFoundException());
+		
+		assertThrows(UserNotFoundException.class, () -> userService.updateUser(USER_ID, NAME, Role.Administrator));
+	}
+	
+	@Test
+	public void updateUser_When_UserExists_Then_ReturnsWhatUserRepositoryReturns() throws UserNotFoundException
+	{
+		User actual = userService.updateUser(USER_ID, NAME, Role.Administrator);
+		
+		assertEquals(user, actual);
 	}
 	
 	//endregion

@@ -4,6 +4,7 @@ import com.hawkins.simpletimeclock.domain.Break;
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.domain.WorkShift;
 import com.hawkins.simpletimeclock.enums.BreakType;
+import com.hawkins.simpletimeclock.enums.Role;
 import com.hawkins.simpletimeclock.exception.*;
 import com.hawkins.simpletimeclock.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -22,12 +23,30 @@ public class UserService
 	
 	public User createUser(String userId) throws UserAlreadyExistsException
 	{
-		return userRepository.create(new User(userId));
+		User user = new User(userId);
+		user.setRole(Role.NonAdministrator);
+		
+		return userRepository.create(user);
 	}
 	
 	public User findUser(String userId) throws UserNotFoundException
 	{
 		return userRepository.find(userId);
+	}
+	
+	public User updateUser(String userId, String name, Role role) throws UserNotFoundException
+	{
+		User user = userRepository.find(userId);
+		if (name != null)
+		{
+			user.setName(name);
+		}
+		if (role != null)
+		{
+			user.setRole(role);
+		}
+		
+		return userRepository.update(user);
 	}
 	
 	public void startShift(String userId) throws UserNotFoundException, WorkShiftInProgressException

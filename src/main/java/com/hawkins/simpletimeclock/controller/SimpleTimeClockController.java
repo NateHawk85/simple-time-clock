@@ -2,6 +2,7 @@ package com.hawkins.simpletimeclock.controller;
 
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.enums.BreakType;
+import com.hawkins.simpletimeclock.enums.Role;
 import com.hawkins.simpletimeclock.exception.*;
 import com.hawkins.simpletimeclock.service.ContextURIService;
 import com.hawkins.simpletimeclock.service.UserService;
@@ -39,12 +40,21 @@ public class SimpleTimeClockController
 		return ResponseEntity.ok(userService.findUser(userId));
 	}
 	
+	@PostMapping("/user/{userId}/update")
+	public ResponseEntity<User> updateUser(@PathVariable String userId, @RequestParam(required = false) String name, @RequestParam(required = false) Role role)
+			throws UserNotFoundException
+	{
+		User user = userService.updateUser(userId, name, role);
+		
+		return ResponseEntity.accepted().body(user);
+	}
+	
 	@PostMapping("/user/{userId}/startShift")
 	public ResponseEntity<HttpStatus> startShift(@PathVariable String userId) throws UserNotFoundException, WorkShiftInProgressException
 	{
 		userService.startShift(userId);
 		
-		return new ResponseEntity<>(HttpStatus.ACCEPTED);
+		return ResponseEntity.accepted().build();
 	}
 	
 	@PostMapping("/user/{userId}/endShift")
@@ -52,7 +62,7 @@ public class SimpleTimeClockController
 	{
 		userService.endShift(userId);
 		
-		return new ResponseEntity<>(HttpStatus.ACCEPTED);
+		return ResponseEntity.accepted().build();
 	}
 	
 	@PostMapping("/user/{userId}/startBreak")
@@ -63,7 +73,7 @@ public class SimpleTimeClockController
 		
 		userService.startBreak(userId, breakType);
 		
-		return new ResponseEntity<>(HttpStatus.ACCEPTED);
+		return ResponseEntity.accepted().build();
 	}
 	
 	@PostMapping("/user/{userId}/endBreak")
@@ -71,6 +81,6 @@ public class SimpleTimeClockController
 	{
 		userService.endBreak(userId);
 		
-		return new ResponseEntity<>(HttpStatus.ACCEPTED);
+		return ResponseEntity.accepted().build();
 	}
 }

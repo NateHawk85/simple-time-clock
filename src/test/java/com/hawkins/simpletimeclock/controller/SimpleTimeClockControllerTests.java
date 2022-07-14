@@ -2,6 +2,7 @@ package com.hawkins.simpletimeclock.controller;
 
 import com.hawkins.simpletimeclock.domain.User;
 import com.hawkins.simpletimeclock.enums.BreakType;
+import com.hawkins.simpletimeclock.enums.Role;
 import com.hawkins.simpletimeclock.exception.*;
 import com.hawkins.simpletimeclock.service.ContextURIService;
 import com.hawkins.simpletimeclock.service.UserService;
@@ -32,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class SimpleTimeClockControllerTests
 {
 	private static final String USER_ID = "987654321";
+	private static final String NAME = "Anna";
 	private static final String CONTEXT_BASE_URI = "http://localhost:8080/simple-time-clock";
 	
 	@MockBean
@@ -43,14 +45,9 @@ public class SimpleTimeClockControllerTests
 	@Autowired
 	private SimpleTimeClockController controller;
 	
-	private User user;
-	
 	@BeforeEach
-	public void setUp() throws UserNotFoundException, UserAlreadyExistsException
+	public void setUp()
 	{
-		user = new User(USER_ID);
-		when(userService.createUser(anyString())).thenReturn(user);
-		when(userService.findUser(anyString())).thenReturn(user);
 		when(contextURIService.fullContextPath()).thenReturn(CONTEXT_BASE_URI);
 	}
 	
@@ -81,9 +78,11 @@ public class SimpleTimeClockControllerTests
 	@Test
 	public void createUser_When_UserServiceReturnsUser_Then_ReturnsWhatUserServiceReturnsInBody() throws UserAlreadyExistsException
 	{
+		User expectedUser = new User();
+		when(userService.createUser(anyString())).thenReturn(expectedUser);
 		ResponseEntity<User> actual = controller.createUser(USER_ID);
 		
-		assertEquals(user, actual.getBody());
+		assertEquals(expectedUser, actual.getBody());
 	}
 	
 	@ParameterizedTest
@@ -137,9 +136,11 @@ public class SimpleTimeClockControllerTests
 	@Test
 	public void findUser_When_UserServiceReturnsUser_Then_ReturnsWhatUserServiceReturnsInBody() throws UserNotFoundException
 	{
+		User expectedUser = new User();
+		when(userService.findUser(anyString())).thenReturn(expectedUser);
 		ResponseEntity<User> actual = controller.findUser(USER_ID);
 		
-		assertEquals(user, actual.getBody());
+		assertEquals(expectedUser, actual.getBody());
 	}
 	
 	@Test
@@ -148,6 +149,50 @@ public class SimpleTimeClockControllerTests
 		when(userService.findUser(anyString())).thenThrow(new UserNotFoundException());
 		
 		assertThrows(UserNotFoundException.class, () -> controller.findUser(USER_ID));
+	}
+	
+	//endregion
+	
+	//region findUser
+	
+	@Test
+	public void updateUser_EndpointExists() throws Exception
+	{
+		mockMvc.perform(post("/user/987654321/update"))
+				.andExpect(status().isAccepted());
+	}
+	
+	@Test
+	public void updateUser_EndpointExistsWithParameters() throws Exception
+	{
+		mockMvc.perform(post("/user/987654321/update?name=Bob&role=Administrator"))
+				.andExpect(status().isAccepted());
+	}
+	
+	@Test
+	public void updateUser_CallsUserService() throws UserNotFoundException
+	{
+		controller.updateUser(USER_ID, NAME, Role.Administrator);
+		
+		verify(userService).updateUser(USER_ID, NAME, Role.Administrator);
+	}
+	
+	@Test
+	public void updateUser_When_UserServiceReturnsUser_Then_ReturnsWhatUserServiceReturnsInBody() throws UserNotFoundException
+	{
+		User expectedUser = new User();
+		when(userService.updateUser(anyString(), anyString(), any())).thenReturn(expectedUser);
+		ResponseEntity<User> actual = controller.updateUser(USER_ID, NAME, Role.Administrator);
+		
+		assertEquals(expectedUser, actual.getBody());
+	}
+	
+	@Test
+	public void updateUser_When_UserServiceThrowsUserNotFoundException_Then_ThrowsSameException() throws UserNotFoundException
+	{
+		when(userService.updateUser(anyString(), anyString(), any())).thenThrow(new UserNotFoundException());
+		
+		assertThrows(UserNotFoundException.class, () -> controller.updateUser(USER_ID, NAME, Role.Administrator));
 	}
 	
 	//endregion
