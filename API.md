@@ -1,3 +1,5 @@
+*NOTE*: All API operations assume a base context path of "http://localhost:8080/simple-time-clock"
+
 ### Create User
 - Endpoint: POST "/user/{userId}"
 - Success:
